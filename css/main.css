@@ -1,0 +1,527 @@
+@import url('https://fonts.googleapis.com/css?family=Roboto:100,100i,300,300i,400,400i,500,500i,700,700i,900,900i');
+@import url('normalize.css');
+@import url('icons.css');
+
+input.email {
+	width: 100%;
+	margin-bottom: 20px;
+}
+
+input.password {
+	width: 100%;
+	margin-bottom: 40px;
+}
+
+div.form-inner {
+	width: 70%;
+	margin-left: auto;
+	margin-right: auto;
+	margin-bottom: 0px;
+}
+
+#loginResult, #signupResult {
+	color: red;
+}
+
+button {
+	width: 100%;
+	background-color: #e74c3c;
+	color: #fff;
+	text-align: center;
+	letter-spacing: .5px;
+    transition: .2s ease-out;
+    cursor: pointer;
+    border: none;
+    border-radius: 2px;
+    display: inline-block;
+    height: 36px;
+    line-height: 36px;
+    outline: 0;
+    padding: 0 2rem;
+    text-transform: uppercase;
+    vertical-align: middle;
+    -webkit-tap-highlight-color: transparent;
+    box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
+    -webkit-appearance: button;
+    overflow: visible;
+    font: inherit;
+    margin: 0;
+    box-sizing: inherit;
+    align-items: flex-start;
+    text-rendering: auto;
+    word-spacing: normal;
+    text-indent: 0px;
+    text-shadow: none;
+    -webkit-writing-mode: horizontal-tb;
+}
+
+button:hover {
+    background-color: #ff6d00;
+}
+
+button:disabled {
+  background-color: grey;
+  opacity: 0.5; 
+  cursor: not-allowed;
+}
+
+/** 
+ *Basic styles 
+ */
+ * {
+ 	box-sizing: border-box; 
+ }
+body {
+	font-family: 'Roboto', sans-serif;
+	background: #fff; 
+	font-size: 14px;
+	color: #333;
+	font-weight: 400;
+}
+p {
+	margin-top: 0;
+	margin-bottom: 10px;
+	line-height: 1.5;
+}
+p:last-child {
+	margin-bottom: 0
+}
+hr {
+	height: 1px;
+	border: none;
+	background-color: #f4f4f4;
+	margin: 10px 0; 
+}
+a {
+	color: #e74c3c;
+}
+li {
+    margin-top: 10px;
+  }
+
+.form-loader {
+  text-align: center;
+  height: 100px;
+}
+
+#preloader {
+  text-align: center;
+  height: 150px;
+}
+
+#status {
+  padding-top: 40px;
+  padding-bottom: 40px;
+  text-align: center;
+}
+
+#url {
+  word-wrap: break-word;         /* All browsers since IE 5.5+ */
+  overflow-wrap: break-word;
+}
+  
+/**
+ grid system 
+ */
+.col-row {
+	margin-left: -10px;
+	margin-right: -10px;
+}
+.col-row:after {
+	content: '';
+	display: table;
+	clear: both;
+}
+.col-row>* {
+	padding: 0 10px;
+    float: left;
+}
+.col-row .col-12 {
+    width: 100%;
+}
+.col-row .col-11 {
+    width: 91.66667%;
+}
+.col-row .col-10 {
+    width: 83.33333%;
+}
+.col-row .col-9 {
+    width: 75%;
+}
+.col-row .col-8 {
+    width: 66.66667%;
+}
+.col-row .col-7 {
+    width: 58.33333%;
+}
+.col-row .col-6 {
+    width: 50%;
+}
+.col-row .col-5 {
+    width: 41.66667%;
+}
+.col-row .col-4 {
+    width: 33.33333%;
+}
+.col-row .col-3 {
+    width: 25%;
+}
+.col-row .col-2 {
+    width: 16.66667%;
+}
+.col-row .col-1 {
+    width: 8.33333%;
+}
+/* end grid system */
+
+
+
+/**
+ *Helper classes 
+ */
+.right {
+	float: right;
+}
+.left {
+	float: left;
+}
+.clearfix:after {
+	content: '';
+	display: table;
+	clear: both;
+}
+.mt5 { margin-top: 5px; }
+.mt10 { margin-top: 10px; }
+.mt20 { margin-top: 20px; }
+.mt30 { margin-top: 30px; }
+.mb5 { margin-bottom: 5px; }
+.mb10 { margin-bottom: 10px; }
+.mb20 { margin-bottom: 20px; }
+.mb30 { margin-bottom: 30px; }
+.pt5 { padding-top: 5px; }
+.pt10 { padding-top: 10px; }
+.pt20 { padding-top: 20px; }
+.pt30 { padding-top: 30px; }
+.pb5 { padding-bottom: 5px; }
+.pb10 { padding-bottom: 10px; }
+.pb20 { padding-bottom: 20px; }
+.pb30 { padding-bottom: 30px; }
+
+
+
+/**
+ typography styles 
+ */
+.text-thin {
+	font-weight: 100;
+}
+.text-light {
+	font-weight: 300;
+}
+.text-normal {
+	font-weight: 400;
+}
+.text-medium {
+	font-weight: 500;
+}
+.text-bold {
+	font-weight: 700;
+}
+
+.font-xs {
+	font-size: 10px;
+}
+.font-sm {
+	font-size: 12px;
+}
+.font-md {
+	font-size: 16px;
+}
+.font-lg {
+	font-size: 18px;
+}
+.font-xlg {
+	font-size: 20px;
+}
+.text-white {
+	color: #fff;
+}
+.uppercase {
+	text-transform: uppercase;
+}
+.lowercase {
+	text-transform: lowercase;
+}
+.text-center {
+	text-align: center;
+}
+.text-left {
+	text-align: left;
+}
+.text-right {
+	text-align: right;
+}
+[class^="icon-"], 
+[class*=" icon-"] {
+	display: inline-block;
+}
+[class^="icon-"]:before, 
+[class*=" icon-"]:before {
+	display: block;
+}
+
+
+
+/**
+ Main styles 
+ */
+.container {
+	width: 630px;
+	margin: 0 auto;
+	padding: 0 10px;
+}
+.container:after {
+	content: '';
+	display: table;
+	clear: both;
+}
+header {
+	background-color: #e74c3c;
+	padding: 22px 0;
+	margin-bottom: 15px;
+}
+header p {
+	margin: 0;
+	padding-top: 1px;
+}
+
+
+/* card styles */
+.card {
+	margin-bottom: 15px;
+}
+.card-head {
+	background-color: #f4f4f4;
+	padding: 25px 10px 25px 90px;
+	position: relative;
+}
+.card-head .card-title {
+	font-size: 16px;
+	color: #e74c3c;
+	text-transform: uppercase; 
+	margin: 0;
+}
+.card-icon {
+	background-color: #e74c3c;
+	font-size: 50px;
+	color: #fff;
+	position: absolute;
+	left: 0;
+	top: 0;
+	height: 100%;
+	width: 68px;
+	text-align: center;
+	padding: 9px;
+}
+.card-body {
+	padding: 16px 13px;
+	border: solid 1px #e9e9e9;
+	border-top: 0;
+	border-bottom-right-radius: 5px;
+	border-bottom-left-radius: 5px;
+}
+/* end of cards styles */
+
+/* tags styles */
+.tags {
+	list-style-type: none;
+	margin-left: 0;
+	margin-top: 0;
+	padding: 0;
+}
+.tags li {
+	display: inline-block;
+	color: #555555;
+	margin-top: 5px;
+	margin-right: 12px;
+	padding: 6px 16px;
+	background-color: #f4f4f4;
+	border-radius: 20px;
+	font-size: 12px;
+	font-weight: 500;
+}
+.tags li a {
+	color: inherit;
+	text-decoration: none;
+}
+/* end tags styles */
+
+/* borded boxes */
+.borderd-box {
+	border: solid 1px transparent;
+	border-radius: 3px;
+	padding: 5px 10px;
+}
+.borderd-box.orange {
+	border-color: #d6b997;
+}
+.borderd-box.green {
+	border-color: #65beb9;
+}
+.borderd-box.red {
+	border-color: #b9655e;
+}
+.borderd-box.purple {
+	border-color: #7c0669;
+}
+.borderd-box.blue {
+	border-color: #344182;
+}
+/* end borded boxes */
+
+/* social buttons */
+.social-link {
+	color: #fff;
+	font-size: 12px;
+	font-weight: 400;
+	position: relative;
+	border-radius: 3px;
+	background: red;
+	line-height: 30px;
+	display: inline-block;
+	padding-left: 40px;
+	padding-right: 15px;
+	text-decoration: none;
+	margin-right: 7px;
+	margin-bottom: 7px;
+}
+.social-link:after {
+	content: '';
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 30px;
+	height: 30px;
+	background-color: rgba(0,0,0,.2);
+	border-top-left-radius: 3px; 
+	border-bottom-left-radius: 3px; 
+	font-family: 'leadzillaio';
+	text-align: center;
+	font-size: 15px;
+}
+.facebook {
+	background-color: #4060a5; 
+}
+.facebook:after {
+	content: 'f';
+}
+.twitter {
+	background-color: #00abe3; 
+}
+.twitter:after {
+	content: 'g';
+}
+.google-plus {
+	background-color: #e64522; 
+}
+.google-plus:after {
+	content: 'h';
+}
+.linkedin {
+	background-color: #0094bc; 
+}
+.linkedin:after {
+	content: 'i';
+}
+.pinterest {
+	background-color: #cb2027; 
+}
+.pinterest:after {
+	content: 'j';
+}
+.instagram {
+	background-color: #b631a4; 
+}
+.instagram:after {
+	content: 'k';
+}
+.youtube {
+	background-color: #ee1c1b; 
+}
+.youtube:after {
+	content: 'l';
+}
+.vimeo {
+	background-color: #1ab7ea; 
+}
+.vimeo:after {
+	content: 'm';
+}
+.xing {
+	background-color: #007577; 
+}
+.xing:after {
+	content: 'n';
+}
+.disqus {
+	background-color: #2e9fff; 
+}
+.disqus:after {
+	content: 'x';
+}
+.vine {
+	background-color: #00a478; 
+}
+.vine:after {
+	content: 'o';
+}
+.vk {
+	background-color: #4c75a3; 
+}
+.vk:after {
+	content: 'p';
+}
+.medium {
+	background-color: #18b475; 
+}
+.medium:after {
+	content: 'u';
+}
+.snapchat {
+	background-color: #efe200; 
+}
+.snapchat:after {
+	content: 'q';
+}
+.foursquare {
+	background-color: #f94777; 
+}
+.foursquare:after {
+	content: 'r';
+}
+.tumblr {
+	background-color: #36465d; 
+}
+.tumblr:after {
+	content: 's';
+}
+.reddit {
+	background-color: #ff4500; 
+}
+.reddit:after {
+	content: 'w';
+}
+.flickr {
+	background-color: #0162c7; 
+}
+.flickr:after {
+	content: 't';
+}
+.soundcloud {
+	background-color: #f60; 
+}
+.soundcloud:after {
+	content: 'v';
+}
+
+/* end social buttons */
