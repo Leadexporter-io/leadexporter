@@ -1,6 +1,8 @@
 const PAGETYPE_SALES_NAVIGATOR = 'Sales Navigator';
 const PAGETYPE_REGULAR_LINKEDIN = 'Regular LinkedIn';
 
+let jobs = [];
+
 function splitName(name) {
   let nameSplit = name.split(" ");
   let firstName = nameSplit[0];
@@ -39,6 +41,36 @@ function loadJob(title, company) {
 
 function changeJob() {
   console.log('job changed');
+  var iFrameDOM = $("iframe#linkedforce-frame").contents();
+  let jobSelectorElements = iFrameDOM.find('#job-selector');
+  if (jobSelectorElements.length > 0) {
+    let jobNumber = $(jobSelectorElements[0]).val();
+    console.log(jobNumber);
+    loadJob(jobs[jobNumber].title, jobs[jobNumber].company);
+  }
+
+}
+
+/* returns array with active jobs from the elements to analyse */
+function analyzeRegularLinkedInPageJobs(allJobs){
+  const jobs = [];
+  $.each(allJobs, function(index, job) {
+    let jobDetails = $(job).find(".pv-entity__summary-info");
+    $.each(jobDetails, function (index, jobDetail) {
+      let jobDetailText = $(jobDetail).text();
+      console.log('jobDetailText:' + jobDetailText);
+      if (isPositionCurrent(jobDetailText)) {
+
+        let jobDetailTextSplit = jobDetailText.split("\n");
+        let job = {
+          title: (jobDetailTextSplit.length > 1 ? jobDetailTextSplit[1].trim() : ''),
+          company: (jobDetailTextSplit.length > 5 ? jobDetailTextSplit[5].trim() : ''),
+        };
+        jobs.push(job);
+      }
+    });
+  });
+  return jobs;
 }
 
 function extractInContentScript() {
@@ -56,11 +88,24 @@ function extractInContentScript() {
   let country = '';
   let pageType = '';
 
+  let phone = '';
+  let email = '';
+  let website = '';
+  let twitter = '';
+
   let url = window.location.href;
   if (url) {
+    // Take only the part before #
     let linkedInSplit = url.split('#');
     if (linkedInSplit.length > 0){
       linkedIn = linkedInSplit[0];
+    }
+    // Take only the part before any slashes after the username
+    linkedInSplit = linkedIn.split('/in/');
+    if (linkedInSplit.length > 1) {
+      let username = linkedInSplit[1];
+      let usernameSplit = username.split('/');
+      linkedIn = linkedInSplit[0] + '/in/' + usernameSplit[0];
     }
   }
 
@@ -84,6 +129,25 @@ function extractInContentScript() {
     let locationSplit = splitLocation(location);
     city = locationSplit.city;
     country = locationSplit.country;
+
+    let contactInfoElement = document.querySelector('.profile-topcard__contact-info');
+    if (contactInfoElement) {
+      $(contactInfoElement).find('.mv2').each(function(index, infoLine) {
+        let infoLineHTML = $(infoLine).html();
+        if (infoLineHTML.indexOf('type="mobile-icon"') > -1) {
+          phone = $(infoLine).find('a').text().trim();
+        }
+        if (infoLineHTML.indexOf('type="envelope-icon"') > -1) {
+          email = $(infoLine).find('a').text().trim();
+        }
+        if (infoLineHTML.indexOf('type="link-icon"') > -1) {
+          website = $(infoLine).find('a').text().trim();
+        }
+        if (infoLineHTML.indexOf('type="twitter-icon"') > -1) {
+          twitter = $(infoLine).find('a').text().trim();
+        }
+      });
+    }
 
   } else {
     // Regular LinkedIn page
@@ -120,27 +184,22 @@ function extractInContentScript() {
   let jqueryURL = chrome.extension.getURL("js/jquery-3.3.1.min.js");
 
   function getJobs() {
-    const jobs = [];
+    jobs = [];
+    let allJobs;
     // Collect the jobs from the page
     if (pageType === PAGETYPE_REGULAR_LINKEDIN) {
-      let allJobs = $("#experience-section").find(".pv-profile-section__card-item");
-      $.each(allJobs, function(index, job) {
-        let jobDetails = $(job).find(".pv-entity__summary-info");
-        $.each(jobDetails, function (index, jobDetail) {
-          let jobDetailText = $(jobDetail).text();
-          if (isPositionCurrent(jobDetailText)) {
-
-            let jobDetailTextSplit = jobDetailText.split("\n");
-            let job = {
-              title: (jobDetailTextSplit.length > 1 ? jobDetailTextSplit[1].trim() : ''),
-              company: (jobDetailTextSplit.length > 5 ? jobDetailTextSplit[5].trim() : ''),
-            };
-            jobs.push(job);
-          }
-        });
-      });
+      console.log('checking for jobs on regular linkedIn page');
+      allJobs = $("#experience-section").find(".pv-profile-section__sortable-card-item");
+      console.log('allJobs sortable cards');
+      console.log(allJobs);
+      jobs = jobs.concat(analyzeRegularLinkedInPageJobs(allJobs));
+      allJobs = $("#experience-section").find(".pv-profile-section__card-item");
+      jobs = jobs.concat(analyzeRegularLinkedInPageJobs(allJobs));
+      console.log('allJobs cards');
+      console.log(allJobs);
     } else {
-      let allJobs = $("#profile-experience").find(".profile-position");
+      console.log('checking for jobs on Sales Navigator page');
+      allJobs = $("#profile-experience").find(".profile-position");
       $.each(allJobs, function(index, job) {
 
         let datesEmployedElement = $(job).find(".profile-position__dates-employed");
@@ -159,8 +218,8 @@ function extractInContentScript() {
 
           if (companyElement) {
             comp = companyElement.text().trim();
-            // Contains hidden ''
-            comp = comp.substring(13, comp.length);
+            // Contains hidden 'Company'
+            comp = comp.substring(13, comp.length).trim();
           }
 
           let job = {
@@ -172,15 +231,25 @@ function extractInContentScript() {
       });
     }
 
+    console.log(JSON.stringify(jobs));
+
     // Load jobs in a dropdown
     if (jobs.length !== 0 && jobInterval) {
-      let jobsHTML = '<select id="jobSelector">';
+      let jobsHTML = '<select id="job-selector">';
+      if (jobs.length > 1) {
+        jobsHTML += '<option value="">Please select a job</option>';
+      }
       for (let j = 0; j < jobs.length; j++) {
         jobsHTML += '<option value="' + j + '">' + jobs[j].title + ' - ' + jobs[j].company + '</option>';
       }
       jobsHTML += '</select>';
       var iFrameDOM = $("iframe#linkedforce-frame").contents();
 	    iFrameDOM.find("#jobs").html(jobsHTML);
+      let jobSelectorElements = iFrameDOM.find('#job-selector');
+      if (jobSelectorElements.length > 0) {
+        console.log('adding eventlistener');
+        jobSelectorElements[0].addEventListener("change", changeJob);
+      }
 
       if (jobs.length === 1) {
         loadJob(jobs[0].title, jobs[0].company);
@@ -229,6 +298,22 @@ function extractInContentScript() {
   html += '  <input type="text" class="form-control" id="headline" value="' + headline + '">';
   html += '</div>'; */
   html += '<div class="form-group">';
+  html += '  <label for="phone">Phone</label>';
+  html += '  <input type="text" class="form-control" id="phone" value="' + phone + '">';
+  html += '</div>';
+  html += '<div class="form-group">';
+  html += '  <label for="email">E-mail</label>';
+  html += '  <input type="text" class="form-control" id="email" value="' + email + '">';
+  html += '</div>';
+  html += '<div class="form-group">';
+  html += '  <label for="website">Website</label>';
+  html += '  <input type="text" class="form-control" id="website" value="' + website + '">';
+  html += '</div>';
+  html += '<div class="form-group">';
+  html += '  <label for="twitter">Twitter</label>';
+  html += '  <input type="text" class="form-control" id="twitter" value="' + twitter + '">';
+  html += '</div>';
+  html += '<div class="form-group">';
   html += '  <label for="city">City</label>';
   html += '  <input type="text" class="form-control" id="city" value="' + city + '">';
   html += '</div>';
@@ -249,6 +334,15 @@ function extractInContentScript() {
   html += '<div class="form-group">';
   html += '  <label for="company">Company</label>';
   html += '  <input type="text" class="form-control" id="company" value="' + company + '">';
+  html += '</div>';
+  html += '<br/>';
+  html += '<div class="form-check form-check-inline">';
+  html += ' <input class="form-check-input" type="radio" name="saveAs" id="saveAsLead" value="lead" checked>';
+  html += ' <label class="form-check-label" for="saveAsLead">Lead</label>';
+  html += '</div>';
+  html += '<div class="form-check form-check-inline">';
+  html += ' <input class="form-check-input" type="radio" name="saveAs" id="saveAsContact" value="contact">';
+  html += ' <label class="form-check-label" for="saveAsContact">Contact</label>';
   html += '</div>';
   html += '<br/>';
   html += '<button type="submit" class="btn btn-primary">Save To CRM</button>';
