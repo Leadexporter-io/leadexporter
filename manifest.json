@@ -20,7 +20,7 @@
     "https://*/*"
   ],
   "content_scripts": [{
-      "js": ["js/jquery-3.3.1.min.js", "js/bootstrap.min.js", "contentscript.js", "js/frame.js"],
+      "js": ["js/jquery-3.3.1.min.js", "js/bootstrap.min.js", "contentscript.js"],
       "css": ["css/bootstrap.min.css"],
       "matches": ["*://*.linkedin.com/*"],
       "all_frames": false
@@ -30,8 +30,7 @@
       "css/bootstrap.min.css",
       "js/bootstrap.min.js",
       "frame.html",
-      "contentscript.js",
-      "js/frame.js"
+      "contentscript.js"
   ],
   "content_security_policy": "script-src 'self'; object-src 'self'"
 }

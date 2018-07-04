@@ -40,15 +40,16 @@ function loadJob(title, company) {
 }
 
 function changeJob() {
-  console.log('job changed');
   var iFrameDOM = $("iframe#linkedforce-frame").contents();
   let jobSelectorElements = iFrameDOM.find('#job-selector');
   if (jobSelectorElements.length > 0) {
     let jobNumber = $(jobSelectorElements[0]).val();
-    console.log(jobNumber);
-    loadJob(jobs[jobNumber].title, jobs[jobNumber].company);
+    if (jobNumber) {
+      loadJob(jobs[jobNumber].title, jobs[jobNumber].company);
+    } else {
+      loadJob('', '');
+    }
   }
-
 }
 
 /* returns array with active jobs from the elements to analyse */
@@ -58,7 +59,6 @@ function analyzeRegularLinkedInPageJobs(allJobs){
     let jobDetails = $(job).find(".pv-entity__summary-info");
     $.each(jobDetails, function (index, jobDetail) {
       let jobDetailText = $(jobDetail).text();
-      console.log('jobDetailText:' + jobDetailText);
       if (isPositionCurrent(jobDetailText)) {
 
         let jobDetailTextSplit = jobDetailText.split("\n");
@@ -71,6 +71,12 @@ function analyzeRegularLinkedInPageJobs(allJobs){
     });
   });
   return jobs;
+}
+
+function switchSaveAsMode() {
+  var iFrameDOM = $("iframe#linkedforce-frame").contents();
+  let saveAsMode = iFrameDOM.find('input[name=save-as]:checked').val();
+  console.log('switch to ' + saveAsMode + ' mode');
 }
 
 function extractInContentScript() {
@@ -337,25 +343,23 @@ function extractInContentScript() {
   html += '</div>';
   html += '<br/>';
   html += '<div class="form-check form-check-inline">';
-  html += ' <input class="form-check-input" type="radio" name="saveAs" id="saveAsLead" value="lead" checked>';
-  html += ' <label class="form-check-label" for="saveAsLead">Lead</label>';
+  html += ' <input class="form-check-input" type="radio" name="save-as" id="save-as-lead" value="lead" checked>';
+  html += ' <label class="form-check-label" for="save-as-lead">Lead</label>';
   html += '</div>';
   html += '<div class="form-check form-check-inline">';
-  html += ' <input class="form-check-input" type="radio" name="saveAs" id="saveAsContact" value="contact">';
-  html += ' <label class="form-check-label" for="saveAsContact">Contact</label>';
+  html += ' <input class="form-check-input" type="radio" name="save-as" id="save-as-contact" value="contact">';
+  html += ' <label class="form-check-label" for="save-as-contact">Contact</label>';
   html += '</div>';
   html += '<br/>';
   html += '<button type="submit" class="btn btn-primary">Save To CRM</button>';
   html += '</form>';
   // html += '<script src="' + jqueryURL + '"></script>';
   // html += '<script src="' + bootstrapJSURL + '"></script>';
-  html += '<script src="js/frame.js">';
   html += '</body>';
   html += '</html>';
   console.log(html);
 
   return html;
-  // return '';
 }
 
 // Avoid recursive frame insertion...
@@ -375,4 +379,9 @@ if (!location.ancestorOrigins.contains(extensionOrigin)) {
     document.body.appendChild(iframe);
 
     iframe.contentDocument.write(html);
+
+    var iFrameDOM = $("iframe#linkedforce-frame").contents();
+    $(iFrameDOM, 'input[name=save-as]').each(function(index, radio) {
+      radio.addEventListener("change", switchSaveAsMode);
+    });
 }
