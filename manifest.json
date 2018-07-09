@@ -16,21 +16,22 @@
     "storage",
     "activeTab",
     "https://ajax.googleapis.com/",
+    "https://use.fontawesome.com/",
     "http://*/*",
     "https://*/*"
   ],
   "content_scripts": [{
       "js": ["js/jquery-3.3.1.min.js", "js/bootstrap.min.js", "contentscript.js"],
       "css": ["css/bootstrap.min.css"],
-      "matches": ["*://*.linkedin.com/*"],
+      "matches": ["*://*.linkedin.com/in/*", "*://*.linkedin.com/sales/people/*"],
       "all_frames": false
   }],
   "web_accessible_resources": [
       "js/jquery-3.3.1.min.js",
       "css/bootstrap.min.css",
       "js/bootstrap.min.js",
-      "frame.html",
-      "contentscript.js"
+      "contentscript.js",
+      "https://use.fontawesome.com/releases/v5.1.0/css/all.css"
   ],
   "content_security_policy": "script-src 'self'; object-src 'self'"
 }
