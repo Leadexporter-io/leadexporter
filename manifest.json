@@ -22,16 +22,19 @@
   ],
   "content_scripts": [{
       "js": ["js/jquery-3.3.1.min.js", "js/bootstrap.min.js", "contentscript.js"],
-      "css": ["css/bootstrap.min.css"],
-      "matches": ["*://*.linkedin.com/in/*", "*://*.linkedin.com/sales/people/*"],
+      "css": ["css/bootstrap.min.css", "fonts/font-awesome-4.7.0/css/font-awesome.min.css"],
+      "matches": ["*://*.linkedin.com/in/*", "*://*.linkedin.com/sales/people/*", "*://mail.google.com/*"],
       "all_frames": false
   }],
   "web_accessible_resources": [
       "js/jquery-3.3.1.min.js",
       "css/bootstrap.min.css",
       "js/bootstrap.min.js",
-      "contentscript.js",
-      "https://use.fontawesome.com/releases/v5.1.0/css/all.css"
+      "fonts/font-awesome-4.7.0/css/font-awesome.min.css",
+      "fonts/font-awesome-4.7.0/fonts/fontawesome-webfont.woff2",
+      "fonts/font-awesome-4.7.0/fonts/fontawesome-webfont.woff",
+      "fonts/font-awesome-4.7.0/fonts/fontawesome-webfont.ttf",
+      "contentscript.js"
   ],
   "content_security_policy": "script-src 'self'; object-src 'self'"
 }
