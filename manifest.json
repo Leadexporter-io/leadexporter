@@ -23,7 +23,7 @@
   "content_scripts": [{
       "js": ["js/jquery-3.3.1.min.js", "js/bootstrap.min.js", "contentscript.js"],
       "css": ["css/bootstrap.min.css", "fonts/font-awesome-4.7.0/css/font-awesome.min.css"],
-      "matches": ["*://*.linkedin.com/in/*", "*://*.linkedin.com/sales/people/*", "*://mail.google.com/*"],
+      "matches": ["*://*.linkedin.com/in/*", "*://*.linkedin.com/sales/people/*", "*://*.linkedin.com/messaging/*", "*://mail.google.com/*"],
       "all_frames": false
   }],
   "web_accessible_resources": [
@@ -34,7 +34,8 @@
       "fonts/font-awesome-4.7.0/fonts/fontawesome-webfont.woff2",
       "fonts/font-awesome-4.7.0/fonts/fontawesome-webfont.woff",
       "fonts/font-awesome-4.7.0/fonts/fontawesome-webfont.ttf",
-      "contentscript.js"
+      "contentscript.js",
+      "img/loading.gif"
   ],
   "content_security_policy": "script-src 'self'; object-src 'self'"
 }
