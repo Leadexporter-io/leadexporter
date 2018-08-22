@@ -21,12 +21,13 @@
     "https://*/*"
   ],
   "content_scripts": [{
-      "js": ["js/jquery-3.3.1.min.js", "js/bootstrap.min.js", "contentscript.js"],
+      "js": ["js/popper.min.js", "js/jquery-3.3.1.min.js", "js/bootstrap.min.js", "contentscript.js"],
       "css": ["css/bootstrap.min.css", "fonts/font-awesome-4.7.0/css/font-awesome.min.css"],
-      "matches": ["*://*.linkedin.com/in/*", "*://*.linkedin.com/sales/people/*", "*://*.linkedin.com/messaging/*", "*://mail.google.com/*"],
+      "matches": ["*://*.linkedin.com/in/*", "*://*.linkedin.com/sales/people/*", "*://*.linkedin.com/messaging/*"],
       "all_frames": false
   }],
   "web_accessible_resources": [
+      "js/popper.min.js",
       "js/jquery-3.3.1.min.js",
       "css/bootstrap.min.css",
       "js/bootstrap.min.js",
