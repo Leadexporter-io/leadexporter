@@ -3,13 +3,17 @@ const PAGETYPE_SALES_NAVIGATOR = 'Sales Navigator';
 const PAGETYPE_REGULAR_LINKEDIN = 'Regular LinkedIn';
 const PAGETYPE_GMAIL = 'Gmail';
 const PAGETYPE_LINKEDIN_MESSAGING = 'LinkedIn Messaging';
+const EDITION_BUSINESS_DEVELOPER = 'Business Developer';
+const EDITION_RECRUITER = 'Recruiter';
 const IFRAME_WIDTH_MINIMIZED = 50;
 const IFRAME_WIDTH_MAXIMIZED = 470;
+// const SERVER_URL = 'https://app.leadexporter.io/api';
 const SERVER_URL = 'http://localhost:10/api';
 const SAVEAS_MODE_LEAD = 'Lead';
 const SAVEAS_MODE_CONTACT = 'Contact';
 const SEARCH_COMPANY_SUBMIT_BUTTON_LABEL = '<i class="fa fa-search"></i>';
 const SUBMIT_BUTTON_LABEL = 'Save To CRM';
+const LINK_CONTACT_BUTTON_LABEL = 'Link to LinkedIn profile';
 const FIELDTYPE_TEXT = 'text';
 const FIELDTYPE_NUMBER = 'number';
 const FIELDTYPE_EMAIL = 'email';
@@ -24,20 +28,30 @@ const popperURL = chrome.extension.getURL("js/popper.min.js");
 const fontAwesomeCSSURL = chrome.extension.getURL("fonts/font-awesome-4.7.0/css/font-awesome.min.css");
 const loadingImageURL = chrome.extension.getURL("img/loading.gif");
 const darkColor = '#004b7c';
+
 var apiKey;
 var userId;
 let jobInterval;
 let whoId;
 var data;
 var mode;
+var edition;
 
+// Positions for Business Developer edition
 let jobs = [];
+// Positions for Recruiter edition
+let positionsMap = new Map();
+
+let educationsMap = new Map();
+
+// let educations = [];
 var iframe;
 var iFrameDOM;
 var minimizedDiv;
 var oldURL;
 var currentURL;
 var profileURL;
+var jobsDetected = false;
 
 function splitName(name) {
   let nameSplit = name.split(" ");
@@ -94,7 +108,9 @@ function analyzeRegularLinkedInPageJobs(allJobs){
   $.each(allJobs, function(index, job) {
     let jobDetails = $(job).find(".pv-entity__summary-info");
     $.each(jobDetails, function (index, jobDetail) {
+      jobsDetected = true;
       let jobDetailText = $(jobDetail).text();
+      console.log('jobDetailText:' + jobDetailText);
       if (isPositionCurrent(jobDetailText)) {
 
         let jobDetailTextSplit = jobDetailText.split("\n");
@@ -104,6 +120,28 @@ function analyzeRegularLinkedInPageJobs(allJobs){
         };
         jobs.push(job);
       }
+    });
+
+    jobDetails = $(job).find(".pv-profile-section__card-item-v2");
+    $.each(jobDetails, function (index, jobDetail) {
+
+      let company = $(jobDetail).find('.pv-entity__company-summary-info').find('h3').text().trim();
+      company = company.substring(14, company.length).trim(); // Skip hidden text 'Company Name'
+      let positionsAtCompany = $(jobDetail).find('.pv-entity__position-group-role-item');
+      $.each(positionsAtCompany, function (index, positionAtCompany) {
+        jobsDetected = true;
+        let title = $(positionAtCompany).find('h3').text();
+        title = title.substring(15, title.length).trim(); // Skip hidden text 'Title' and some whitespace
+        let dates = $(positionAtCompany).find('.pv-entity__date-range').text();
+        dates = dates.substring(25, dates.length).trim(); // Skip hidden text 'Dates Employed' and some whitespace
+        if (isPositionCurrent(dates)) {
+          let job = {
+            title,
+            company,
+          };
+          jobs.push(job);
+        }
+      });
     });
   });
   return jobs;
@@ -184,6 +222,23 @@ function nameElementLoaded() {
   return (salesNavigatorNameElement || linkedInNameElement);
 }
 
+function addToUniqueJobs(jobs, newJobs) {
+  let jobStrings = new Set();
+  for (let j = 0; j < jobs.length; j++) {
+    jobStrings.add(JSON.stringify(jobs[j]));
+  }
+
+  for (let j = 0; j < newJobs.length; j++) {
+    const newJob = newJobs[j];
+    if (!jobStrings.has(JSON.stringify(newJob))) {
+      jobStrings.add(JSON.stringify(newJob));
+      jobs.push(newJob);
+    }
+  }
+
+  return jobs;
+}
+
 function getJobs() {
   console.log('getJobs');
 
@@ -193,12 +248,14 @@ function getJobs() {
     jobs = [];
     // console.log('checking for jobs on regular linkedIn page');
     allJobs = $("#experience-section").find(".pv-profile-section__sortable-card-item");
-    jobs = jobs.concat(analyzeRegularLinkedInPageJobs(allJobs));
+    jobs = addToUniqueJobs(jobs, analyzeRegularLinkedInPageJobs(allJobs));
     allJobs = $("#experience-section").find(".pv-profile-section__card-item");
-    jobs = jobs.concat(analyzeRegularLinkedInPageJobs(allJobs));
+    jobs = addToUniqueJobs(jobs, analyzeRegularLinkedInPageJobs(allJobs));
+    allJobs = $("#experience-section").find(".pv-entity__position-group-pager");
+    jobs = addToUniqueJobs(jobs, analyzeRegularLinkedInPageJobs(allJobs));
 
     // Load jobs in a dropdown
-    if (jobs.length !== 0 && jobInterval) {
+    if (jobsDetected && jobInterval) {
       createJobsDropdown(jobs);
 
       // Stop checking if the jobs section is loaded
@@ -228,11 +285,15 @@ function createJobsDropdown(jobs) {
   console.log('createJobsDropdown for ' + JSON.stringify(jobs));
   // Create dropdown code
   let jobsHTML = '<select id="job-selector">';
-  if (jobs.length > 1) {
-    jobsHTML += '<option value="">Please select a job</option>';
-  }
-  for (let j = 0; j < jobs.length; j++) {
-    jobsHTML += '<option value="' + j + '">' + jobs[j].title + ' - ' + jobs[j].company + '</option>';
+  if (jobs.length === 0) {
+    jobsHTML += '<option value="">No current positions</option>';
+  } else {
+    if (jobs.length > 1) {
+      jobsHTML += '<option value="">Please select a position</option>';
+    }
+    for (let j = 0; j < jobs.length; j++) {
+      jobsHTML += '<option value="' + j + '">' + jobs[j].title + ' - ' + jobs[j].company + '</option>';
+    }
   }
   jobsHTML += '</select>';
 
@@ -271,7 +332,7 @@ function getName() {
   return result;
 }
 
-function getLinkedFromUrl(url) {
+function getLinkedInFromUrl(url) {
   if (url) {
     // Take only the part before #
     let linkedInSplit = url.split('#');
@@ -300,7 +361,7 @@ function getLinkedIn(url) {
     }
   }
   if (pageType === PAGETYPE_REGULAR_LINKEDIN) {
-    linkedIn = getLinkedFromUrl(url);
+    linkedIn = getLinkedInFromUrl(url);
   }
 
   // Remove trailing slash
@@ -347,6 +408,91 @@ function initData() {
   }
 }
 
+function getEducations() {
+  if(data.educations) {
+    educationsMap = new Map();
+    for (let e = 0; e < data.educations.length; e++) {
+      const education = data.educations[e];
+      const newEducation = {  eduId: education.eduId,
+                              degree: education.degree,
+                              institution: education.schoolName };
+      if (education.startedOn) {
+        newEducation.startDate = { year: education.startedOn.year, month: education.startedOn.month, day: education.startedOn.day };
+      }
+      if (education.endedOn) {
+        newEducation.endDate = { year: education.endedOn.year, month: education.endedOn.month, day: education.endedOn.day };
+      }
+      // Set eduId key as string
+      educationsMap.set('' + education.eduId, newEducation);
+    }
+  }
+
+  let html  = '';
+  educationsMap.forEach(function (education, key, map) {
+    html += '<div class="education">';
+    html += ' <input type="hidden" class="education-id" value="' + education.eduId + '"/>';
+    html += '  <div class="form-check">';
+    html += '    <input type="checkbox" class="form-check-input education-select" id="education' + key + '-select"  checked="checked"/>';
+    html += '    <label for="education' + key + '-select" class="form-check-label">Select</label>';
+    html += '  </div>';
+    html += '  <div class="form-group">';
+    html += '    <label for="educations' + key + '-degree">Degree</label>';
+    html += '    <input type="text" class="form-control education-degree" id="education' + key + '-degree" value="' + education.degree + '" />';
+    html += '  </div>';
+    html += '  <div class="form-group">';
+    html += '    <label for="educations' + key + '-institution">Institution</label>';
+    html += '    <input type="text" class="form-control education-institution" id="education' + key + '-institution" value="' + education.institution + '"/>';
+    html += '  </div>';
+    html += '</div>';
+  });
+
+  iFrameDOM.find('#educations').html(html);
+}
+
+function getPositions() {
+  if (data.positions) {
+    positionsMap = new Map();
+    for (let p = 0; p < data.positions.length; p++) {
+      const position = data.positions[p];
+      const newPosition = { posId: position.posId,
+                            current: position.current,
+                            title: position.title,
+                            companyName: position.companyName,
+                            description: position.description,
+                            location: position.location };
+      if (position.startedOn) {
+        newPosition.startDate = { year: position.startedOn.year, month: position.startedOn.month, day: position.startedOn.day };
+      }
+      if (position.endedOn) {
+        newPosition.endDate = { year: position.endedOn.year, month: position.endedOn.month, day: position.endedOn.day };
+      }
+      // Set posId key as string
+      positionsMap.set('' + position.posId, newPosition);
+    }
+  }
+
+  let html  = '';
+  positionsMap.forEach(function (position, key, map) {
+    html += '<div class="position">';
+    html += ' <input type="hidden" class="position-id" value="' + position.posId + '"/>';
+    html += '  <div class="form-check">';
+    html += '    <input type="checkbox" class="form-check-input position-select" id="position' + key + '-select"  checked="checked"/>';
+    html += '    <label for="position' + key + '-select" class="form-check-label">Select</label>';
+    html += '  </div>';
+    html += '  <div class="form-group">';
+    html += '    <label for="positions' + key + '-title">Title</label>';
+    html += '    <input type="text" class="form-control position-title" id="position' + key + '-title" value="' + position.title + '" />';
+    html += '  </div>';
+    html += '  <div class="form-group">';
+    html += '    <label for="positions' + key + '-company">Company</label>';
+    html += '    <input type="text" class="form-control position-company" id="position' + key + '-company" value="' + position.companyName + '"/>';
+    html += '  </div>';
+    html += '</div>';
+  });
+
+  iFrameDOM.find('#positions').html(html);
+}
+
 function fillForm() {
   console.log('fillForm');
   let name = '';
@@ -369,6 +515,7 @@ function fillForm() {
   let emails = [];
   let websites = [];
   let twitters = [];
+  educations = [];
 
   let url = window.location.href;
   console.log('url:' + url);
@@ -378,7 +525,6 @@ function fillForm() {
 
   if (pageType === PAGETYPE_SALES_NAVIGATOR) {
     console.log('Processing Sales Navigator Profile');
-    maximize();
 
     // name
     name = data.fullName;
@@ -439,9 +585,14 @@ function fillForm() {
     // Jobs
     getJobs();
 
+    // Educations
+    getEducations();
+
+    // Positions
+    getPositions();
+
   } else if (pageType ===  PAGETYPE_REGULAR_LINKEDIN) {
     console.log('processing regular LinkedIn profile');
-    maximize();
 
     // Name
     let nameResult = getName();
@@ -464,10 +615,8 @@ function fillForm() {
 
   } else if (pageType === PAGETYPE_GMAIL) {
     console.log('processing Gmail');
-    maximize();
 
     nameElements = $('.gD');
-    console.log(nameElements);
     if (nameElements.length > 0) {
       // Take the latest one
       const nameElement = $(nameElements[nameElements.length - 1]);
@@ -479,14 +628,11 @@ function fillForm() {
 
       email = nameElement.attr('email');
     }
-  } else {
-    minimize();
   }
 
   /* if (!nameElement) {
     nameInterval = setInterval(refillForm, 1000);
   } */
-
 
 
   // Load the data into the the form
@@ -599,39 +745,48 @@ function createForm() {
   html += '    </ul>';
   html += '  </div>'; */
 
-  html += '<h3>Current Jobs</h3>';
-  html += '<div id="jobs">Scroll down to load jobs</div>';
-  html += '<div class="form-group">';
-  html += '  <label for="title">Title</label>';
-  html += '  <input type="text" class="form-control" id="title" name="title" required />';
-  html += '</div>';
-  html += '<div id="company-input">';
-  html += '  <div class="form-group" id="company-input-lead">';
-  html += '    <label for="company-name-lead">Company</label>';
-  html += '    <input type="text" class="form-control company-input" id="company-name-lead" />';
-  html += '  </div>';
-  html += '  <div class="form-group mb-0" id="company-input-contact" style="display: none">';
-  html += '    <label>Company</label>';
-  html += '    <div class="input-group">';
-  html += '      <div class="input-group-prepend">';
-  html += '        <span class="input-group-text" id="open-search-company-form-button"><a href="#!"><i class="fa fa-search"></i></a></span>';
-  html += '      </div>';
-  html += '      <input type="text" class="form-control company-input" id="company-name-contact" readonly required />';
-  html += '    </div>';
-  html += '    <input type="hidden" id="company-id-contact" />';
-  html += '  </div>';
-  html += '  <div id="search-company-popup" class="collapse shadow">';
-  html += '    <div class="input-group mb-0" id="search-company-popup-input-row">';
-  html += '      <input type="text" id="search-company-query" class="form-control" placeholder="Company name"/>';
-  html += '      <span class="input-group-btn">';
-  html += '        <button type="button" id="search-company-submit-button" class="btn btn-primary">' + SEARCH_COMPANY_SUBMIT_BUTTON_LABEL + '</button>';
-  html += '      </span>';
-  html += '    </div>';
-  html += '    <div id="search-company-results">';
-  html += '    </div>';
-  html += '  </div>';
-  html += '</div>';
-  html += '<br/>';
+  if (edition === EDITION_BUSINESS_DEVELOPER) {
+    html += '<h3>Current Positions</h3>';
+    html += '<div id="jobs">Scroll down to load jobs</div>';
+    html += '<div class="form-group">';
+    html += '  <label for="title">Title</label>';
+    html += '  <input type="text" class="form-control" id="title" name="title" required />';
+    html += '</div>';
+    html += '<div id="company-input">';
+    html += '  <div class="form-group" id="company-input-lead">';
+    html += '    <label for="company-name-lead">Company</label>';
+    html += '    <input type="text" class="form-control company-input" id="company-name-lead" />';
+    html += '  </div>';
+    html += '  <div class="form-group mb-0" id="company-input-contact" style="display: none">';
+    html += '    <label>Company</label>';
+    html += '    <div class="input-group">';
+    html += '      <div class="input-group-prepend">';
+    html += '        <span class="input-group-text" id="open-search-company-form-button"><a href="#!"><i class="fa fa-search"></i></a></span>';
+    html += '      </div>';
+    html += '      <input type="text" class="form-control company-input" id="company-name-contact" readonly required />';
+    html += '    </div>';
+    html += '    <input type="hidden" id="company-id-contact" />';
+    html += '  </div>';
+    html += '  <div id="search-company-popup" class="collapse shadow">';
+    html += '    <div class="input-group mb-0" id="search-company-popup-input-row">';
+    html += '      <input type="text" id="search-company-query" class="form-control" placeholder="Company name"/>';
+    html += '      <span class="input-group-btn">';
+    html += '        <button type="button" id="search-company-submit-button" class="btn btn-primary">' + SEARCH_COMPANY_SUBMIT_BUTTON_LABEL + '</button>';
+    html += '      </span>';
+    html += '    </div>';
+    html += '    <div id="search-company-results">';
+    html += '    </div>';
+    html += '  </div>';
+    html += '</div>';
+    html += '<br/>';
+  }
+  if (edition === EDITION_RECRUITER) {
+    html += '<h3>Positions</h3>';
+    html += '<div id="positions"></div>';
+    html += '<br/>';
+    html += '<h3>Educations</h3>';
+    html += '<div id="educations"></div>';
+  }
   /* html += '<div class="form-check form-check-inline">';
   html += ' <input class="form-check-input" type="radio" name="save-as" id="save-as-lead" value="lead" checked />';
   html += ' <label class="form-check-label" for="save-as-lead">Lead</label>';
@@ -691,6 +846,12 @@ function createFrameTemplate() {
   html += '}';
   html += 'div.menu-icon {';
   html += '  padding-top: 5px;';
+  html += '}';
+  html += 'div.position {';
+  html += '  margin-top: 35px;';
+  html += '}';
+  html += 'div.education {';
+  html += '  margin-top: 35px;';
   html += '}';
   html += '#logout-button { float: left; }';
   html += '#minimize-button { float: right; }';
@@ -757,9 +918,10 @@ function createContactSidebar(contact, contacts, linkedIn, name, profilePictureU
       html += 'We found one or more ' + objectPlural + ' in Salesforce with this name, which are <b>not linked</b> to this LinkedIn profile:<br/><br/>';
       for (let c = 0; c < contacts.length; c++) {
         html += '<p style="float: left; "><a href="' + contacts[c].link + '" target="_blank">' + contacts[c].name + '</a></p>';
-        html += '<p style="float: right; "><a class="btn btn-primary link-contact" href="!#" id="' + contacts[c].id + '">Link to LinkedIn profile</a></p>';
+        html += '<p style="float: right; "><a class="btn btn-primary link-contact" href="!#" id="' + contacts[c].id + '">' + LINK_CONTACT_BUTTON_LABEL + '</a></p>';
         html += '<br/><br/>';
       }
+      html += '<div id="link-contact-error" class="alert alert-danger" style="display: none"></div>';
     }
   }
 
@@ -778,9 +940,11 @@ function createLoginForm() {
   html += '    <label for="password">Password</label>';
   html += '    <input type="password" class="form-control" id="password" name="password" required="required"/>';
   html += '  </div>';
-  html += '  <div class="alert alert-danger" id="login-error-message" style="display: none" ></div>';
+  html += '  <div class="alert alert-danger" id="login-error-message" style="display: none"></div>';
   html += '  <button type="submit" class="btn btn-primary">Log In</button>';
   html += ' </form>';
+  html += ' <br/>';
+  html += ' <a href="https://app.leadexporter.io/register" target="_blank">I don\'t have an account yet</a>';
 
   return html;
 }
@@ -830,14 +994,12 @@ function getCompanyName() {
 function linkContact(contactId, linkedIn) {
   console.log('linkedContact with contactId ' + contactId + ' and linkedIn:' + linkedIn);
 
-  const saveAs = mode; // getSaveAsMode();
-
   // Get all elements in the form and put them in an array
   const valuesArray = [];
   valuesArray.push(['linkedIn', linkedIn]);
 
   const postData = { valuesArray,
-                     saveAs,
+                     mode,
                      contactId,
                      userId,
                      apiKey };
@@ -846,11 +1008,17 @@ function linkContact(contactId, linkedIn) {
 
   // hideMessages();
   // iFrameDOM.find('#submit-button').html('<i class="fa fa-circle-o-notch fa-spin"></i> Saving...');
-
+  iFrameDOM.find('#link-contact-error').css('display', 'none');
+  iFrameDOM.find('#link-contact-error').text('');
   $.post(SERVER_URL + '/contact/update', postData, (result) => {
+    // Reset button
+    iFrameDOM.find('#' + contactId).html(LINK_CONTACT_BUTTON_LABEL);
     console.log(JSON.stringify(result));
     if (result.success) {
       loadFrameContent();
+    } else {
+      iFrameDOM.find('#link-contact-error').css('display', 'block');
+      iFrameDOM.find('#link-contact-error').text('Linking failed: ' + result.error);
     }
     /* iFrameDOM.find('#submit-button').html(SUBMIT_BUTTON_LABEL);
     if (result.success) {
@@ -861,6 +1029,42 @@ function linkContact(contactId, linkedIn) {
   });
 }
 
+function getSelectedPositions() {
+  const positions = [];
+
+  iFrameDOM.find('.position').each((index, position) => {
+    if ($(position).find('.form-check-input').is(':checked')) {
+      // Get position details from map
+      const posId = $(position).find('.position-id').val();
+      const newPosition = positionsMap.get(posId);
+      // Overwrite title and companyname with values from inputs
+      newPosition.title = $(position).find('.position-title').val();
+      newPosition.companyName = $(position).find('.position-company').val();
+      positions.push(newPosition);
+    }
+  });
+
+  return positions;
+}
+
+function getSelectionEducations() {
+  const educations = [];
+
+  iFrameDOM.find('.education').each((index, education) => {
+    if ($(education).find('.form-check-input').is(':checked')) {
+      // Get education details from map
+      const eduId = $(education).find('.education-id').val();
+      const newEducation = educationsMap.get(eduId);
+      // Overwrite degree and institution with values from inputs
+      newEducation.degree = $(education).find('.education-degree').val();
+      newEducation.institution = $(education).find('.education-institution').val();
+      educations.push(newEducation);
+    }
+  });
+
+  return educations;
+}
+
 function submit() {
   console.log('submit');
 
@@ -869,10 +1073,18 @@ function submit() {
   // Get all elements in the form and put them in an array
   const valuesArray = [];
   iFrameDOM.find('.form-control').each((index, field) => {
-    console.log('mapping ' + $(field).prop('id') + ' to ' + $(field).val());
-    valuesArray.push([$(field).prop('id'), $(field).val()]);
+    if ($(field).hasClass('position-title') && $(field).hasClass('position-company')) {
+      console.log('mapping ' + $(field).prop('id') + ' to ' + $(field).val());
+      valuesArray.push([$(field).prop('id'), $(field).val()]);
+    }
   });
   valuesArray.push(['company', (saveAs === SAVEAS_MODE_LEAD ? getCompanyName() : iFrameDOM.find('#company-id-contact').val())]);
+
+  // Get selected positions
+  valuesArray.push(['positions', getSelectedPositions()]);
+
+  // Get selected educations
+  valuesArray.push(['educations', getSelectionEducations()]);
 
   const postData = { valuesArray,
                      saveAs,
@@ -1157,9 +1369,17 @@ function getProfilePictureURL() {
     pictureElement = $('.entity-image.entity-size-6.person');
     return pictureElement.prop('src');
   }
+
   if (pageType === PAGETYPE_REGULAR_LINKEDIN) {
     pictureElement = $('.pv-top-card-section__photo');
-    return getBackgroundImageURLFromElement(pictureElement);
+    console.log('pictureElement:' + pictureElement);
+    if (pictureElement.length > 0) {
+      return getBackgroundImageURLFromElement(pictureElement);
+    } else {
+      // User visits his own profile
+      pictureElement = $('.profile-photo-edit__preview');
+      return pictureElement.prop('src');
+    }
   }
 }
 
@@ -1198,6 +1418,10 @@ function populateContactSidebar(contact, contacts, linkedIn, name, profilePictur
     event.preventDefault();
 
     let contactId = event.target.id;
+
+    // Loading indicator on button
+    iFrameDOM.find('#' + contactId).html('<i class=\'fa fa-spinner fa-spin\'></i> Working hard...');
+
     linkContact(contactId, linkedIn);
   });
   iFrameDOM.find('#open-form-button').click((event) => {
@@ -1232,11 +1456,13 @@ function getProfilePictureFromMessagingPage() {
 }
 
 function loadFrameContent(urlHasChanged) {
-
+  jobsDetected = false;
   console.log('userId:' + userId + ' apiKey:' + apiKey);
   if (userId && apiKey) {
 
     // Determine page type
+    //       "matches": ["*://*.linkedin.com/in/*", "*://*.linkedin.com/sales/people/*", "*://*.linkedin.com/messaging/*"],
+    pageType = '';
     if (currentURL.indexOf('/sales/people') > -1) {
       // LinkedIn Sales Navigator page
       pageType = PAGETYPE_SALES_NAVIGATOR;
@@ -1250,87 +1476,97 @@ function loadFrameContent(urlHasChanged) {
       // InMail mailbox
       pageType = PAGETYPE_LINKEDIN_MESSAGING;
     }
+    console.log('currentURL:' + currentURL + ' pageType:' + pageType);
 
-    if (pageType === PAGETYPE_SALES_NAVIGATOR) {
-      initData();
-      if (data.flagshipProfileUrl === profileURL && urlHasChanged) {
-        console.log('we need to check again');
-        location.reload();
-        // setTimeout(function(){ loadFrameContent(); }, 1000);
-        // loadFrameContent()
+    if (pageType) {
+      maximize();
+      if (pageType === PAGETYPE_SALES_NAVIGATOR) {
+        initData();
+        if (data.flagshipProfileUrl === profileURL && urlHasChanged) {
+          console.log('we need to check again');
+          location.reload();
+          // setTimeout(function(){ loadFrameContent(); }, 1000);
+          // loadFrameContent()
+        } else {
+          profileURL = data.flagshipProfileUrl;
+        }
+      }
+
+      // Show sidebar with loading content while we're getting all data
+      populateLoadingSidebar();
+
+      let linkedIn;
+      let name;
+      let profilePictureURL;
+
+      if (pageType === PAGETYPE_LINKEDIN_MESSAGING) {
+        linkedIn = $('.msg-thread__topcard-btn').prop('href');
+        name = $('.msg-entity-lockup__entity-title').text().trim();
+
+        // Because of async loading: keep trying until we found the picture
+        profilePictureURL = getProfilePictureFromMessagingPage();
+        if (!profilePictureURL) {
+          let getProfilePictureFromMessagingPageInterval = setInterval(() => {
+            console.log('doing interval');
+            profilePictureURL = getProfilePictureFromMessagingPage();
+            if (profilePictureURL) {
+              iFrameDOM.find('#profile-picture').attr('src', profilePictureURL);
+              console.log('clearing interval');
+              clearInterval(getProfilePictureFromMessagingPageInterval);
+            }
+          }, 500);
+        }
       } else {
-        profileURL = data.flagshipProfileUrl;
+        name = getName().name;
+        profilePictureURL = getProfilePictureURL();
+        linkedIn = getLinkedIn(currentURL);
       }
-    }
 
-    // Show sidebar with loading content while we're getting all data
-    populateLoadingSidebar();
+      const postData = { linkedIn,
+                          name,
+                          userId,
+                          apiKey };
 
-    let linkedIn;
-    let name;
-    let profilePictureURL;
+      $.post(SERVER_URL + '/contact/search', postData, (result) => {
+        console.log('result: ' + JSON.stringify(result));
+        if (result.success) {
+          const contact = result.contact;
+          const contacts = result.contacts;
+          mode = result.mode;
 
-    if (pageType === PAGETYPE_LINKEDIN_MESSAGING) {
-      linkedIn = $('.msg-thread__topcard-btn').prop('href');
-      name = $('.msg-entity-lockup__entity-title').text().trim();
+          edition = result.edition;
+          console.log('edition on load:' + edition);
 
-      // Because of async loading: keep trying until we found the picture
-      profilePictureURL = getProfilePictureFromMessagingPage();
-      if (!profilePictureURL) {
-        let getProfilePictureFromMessagingPageInterval = setInterval(() => {
-          console.log('doing interval');
-          profilePictureURL = getProfilePictureFromMessagingPage();
-          if (profilePictureURL) {
-            iFrameDOM.find('#profile-picture').attr('src', profilePictureURL);
-            console.log('clearing interval');
-            clearInterval(getProfilePictureFromMessagingPageInterval);
+          if (contact) {
+            whoId = (contact ? contact.id : null );
+            console.log('whoId:' + whoId);
           }
-        }, 500);
-      }
+
+          populateContactSidebar(contact, contacts, linkedIn, name, profilePictureURL);
+
+          if (currentURL.indexOf('/messaging') > -1) {
+
+            if (whoId) {
+              const postData = { whoId,
+                                 userId,
+                                 apiKey };
+              $.post(SERVER_URL + '/tasks', postData, (result) => {
+                if (result.success) {
+                  const tasks = result.tasks;
+                  createMessageTaskLinks(tasks);
+                }
+              });
+            }
+          }
+
+        } else {
+          console.log('request failed: ' + result.error);
+        }
+      });
     } else {
-      name = getName().name;
-      profilePictureURL = getProfilePictureURL();
-      linkedIn = getLinkedIn(currentURL);
+      // User visits a page on which we don't want to show the extension, eg. the Notifications page on LinkedIn
+      minimize();
     }
-
-    const postData = { linkedIn,
-                        name,
-                        userId,
-                        apiKey };
-
-    $.post(SERVER_URL + '/contact/search', postData, (result) => {
-      console.log('result: ' + JSON.stringify(result));
-      if (result.success) {
-        const contact = result.contact;
-        const contacts = result.contacts;
-        mode = result.mode;
-
-        if (contact) {
-          whoId = (contact ? contact.id : null );
-          console.log('whoId:' + whoId);
-        }
-
-        populateContactSidebar(contact, contacts, linkedIn, name, profilePictureURL);
-
-        if (currentURL.indexOf('/messaging') > -1) {
-
-          if (whoId) {
-            const postData = { whoId,
-                               userId,
-                               apiKey };
-            $.post(SERVER_URL + '/tasks', postData, (result) => {
-              if (result.success) {
-                const tasks = result.tasks;
-                createMessageTaskLinks(tasks);
-              }
-            });
-          }
-        }
-
-      } else {
-        console.log('request failed: ' + result.error);
-      }
-    });
   } else {
     populateLoginForm();
   }
