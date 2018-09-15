@@ -19,9 +19,9 @@
     "https://*/*"
   ],
   "content_scripts": [{
-      "js": ["js/popper.min.js", "js/jquery-3.3.1.min.js", "js/bootstrap.min.js", "contentscript.js"],
-      "css": ["css/bootstrap.min.css", "fonts/font-awesome-4.7.0/css/font-awesome.min.css"],
+      "js": ["js/jquery-3.3.1.min.js", "contentscript.js"],
       "matches": ["*://*.linkedin.com/*"],
+      "exclude_matches":["*://*.linkedin.com/recruiter/smartsearch*"],
       "all_frames": false
   }],
   "web_accessible_resources": [
@@ -34,7 +34,8 @@
       "fonts/font-awesome-4.7.0/fonts/fontawesome-webfont.woff",
       "fonts/font-awesome-4.7.0/fonts/fontawesome-webfont.ttf",
       "contentscript.js",
-      "img/loading.gif"
+      "img/loading.gif",
+      "img/face.png"
   ],
   "content_security_policy": "script-src 'self'; object-src 'self'"
 }

@@ -1,5 +1,6 @@
 let pageType;
-const PAGETYPE_SALES_NAVIGATOR = 'Sales Navigator';
+const PAGETYPE_SALES_NAVIGATOR = 'LinkedIn Sales Navigator';
+const PAGETYPE_RECRUITER = 'LinkedIn Recruiter';
 const PAGETYPE_REGULAR_LINKEDIN = 'Regular LinkedIn';
 const PAGETYPE_GMAIL = 'Gmail';
 const PAGETYPE_LINKEDIN_MESSAGING = 'LinkedIn Messaging';
@@ -27,7 +28,9 @@ const bootstrapJSURL = chrome.extension.getURL("js/bootstrap.min.js");
 const popperURL = chrome.extension.getURL("js/popper.min.js");
 const fontAwesomeCSSURL = chrome.extension.getURL("fonts/font-awesome-4.7.0/css/font-awesome.min.css");
 const loadingImageURL = chrome.extension.getURL("img/loading.gif");
+const faceImageURL = chrome.extension.getURL("img/face.png");
 const darkColor = '#004b7c';
+var recruiterProfileData;
 
 var apiKey;
 var userId;
@@ -73,7 +76,7 @@ function splitLocation(location) {
   }
 
   // Remove 'area' if it's part of the city
-  city = city.replace(' Area', '');
+  // city = city.replace(' Area', '');
 
   return { city, country };
 }
@@ -110,7 +113,6 @@ function analyzeRegularLinkedInPageJobs(allJobs){
     $.each(jobDetails, function (index, jobDetail) {
       jobsDetected = true;
       let jobDetailText = $(jobDetail).text();
-      console.log('jobDetailText:' + jobDetailText);
       if (isPositionCurrent(jobDetailText)) {
 
         let jobDetailTextSplit = jobDetailText.split("\n");
@@ -172,33 +174,38 @@ function createTask(message, i) {
                      whoId };
 
   console.log('postData:' + JSON.stringify(postData));
-  $('#taskMessage' + i).html('<b>Saving...</b>');
+  $('#task-message-' + whoId + '-' + i).html('<b>Saving...</b>');
   $.post(SERVER_URL + '/task', postData, (result) => {
     console.log('result from creating task:' + JSON.stringify(result));
-    $('#taskMessage' + i).html('<a href="' + result.link +'" target="_blank"><b>Task Saved</b></a>');
+    $('#task-message-' + whoId + '-' + i).html(createTaskSavedLink(result.link));
   });
 }
 
-function createLink(messageGroup, i, tempMessage, taskExists, recordLink) {
+function createTaskSavedLink(link) {
+  return '<a href="' + link + '" target="_blank" style="color:green">Task saved</a>';
+}
+
+function createTaskLink(messageGroup, i, taskExists, recordLink) {
   // Create the link and the event binder
   let link;
   if (taskExists) {
-    link = '<div id="taskMessage' + i + '"><a href="' + recordLink + '" target="_blank">Task Saved</a></div>';
+    link = '<div id="task-message-' + whoId + '-' + i + '" style="margin-left: 10px;">' + createTaskSavedLink(recordLink) + '</div>';
   } else {
-    link = '<div id="taskMessage' + i + '"><a id=\"create-task-' + i + '\" href=\"!#\">Create task</a></div>';
+    link = '<div id="task-message-' + whoId + '-' + i + '" style="margin-left: 10px;"><a id=\"create-task-' + whoId + '-' + i + '\" data-counter="' + i + '" href=\"!#\">Create task</a></div>';
   }
-  $(messageGroup).find('.msg-s-message-group__meta').html($(messageGroup).find('.msg-s-message-group__meta').html() + link);
-  $('#create-task-' + i).on('click', function (e) {
-    e.preventDefault();
-    // Get the id of the element that's clicked
-    const id = $(this).prop('id');
-    const counter = id.slice(-1);
+  // Add link if it doesn't already exist
+  console.log('length: ' + $('#task-message-' + whoId + '-' + i).length);
+  if ($('#task-message-' + whoId + '-' + i).length === 0) {
+    $(messageGroup).find('.msg-s-message-group__meta').html($(messageGroup).find('.msg-s-message-group__meta').html() + link);
+    $('#create-task-' + whoId + '-' + i).on('click', function (e) {
+      e.preventDefault();
+      // Get the counter of the element that's clicked
+      const counter = $(this).attr('data-counter');
+      console.log('counter:' + counter + ' message:' + MESSAGES[counter - 1] + ' messages: ' + MESSAGES);
 
-    createTask(MESSAGES[counter], counter);
-  });
-
-  // Save this message
-  MESSAGES.push(tempMessage);
+      createTask(MESSAGES[counter - 1], counter);
+    });
+  }
 }
 
 /* Handle scenario where page is 'loaded' but not all elements are (due to async loading) */
@@ -328,6 +335,20 @@ function getName() {
     result.firstName = nameSplit.firstName;
     result.lastName = nameSplit.lastName;
   }
+  if (pageType === PAGETYPE_RECRUITER) {
+    if (data) {
+      result.name = data.fullName;
+      result.firstName = data.firstName;
+      result.lastName = data.lastName;
+    } else {
+      console.log('getName: recruiter data not initialised');
+    }
+    /* result.name = $('.info-container').find('.profile-info').find('h1').text().trim();
+    console.log('result.name:' + result.name);
+    let nameSplit = splitName(result.name);
+    result.firstName = nameSplit.firstName;
+    result.lastName = nameSplit.lastName; */
+  }
 
   return result;
 }
@@ -363,6 +384,9 @@ function getLinkedIn(url) {
   if (pageType === PAGETYPE_REGULAR_LINKEDIN) {
     linkedIn = getLinkedInFromUrl(url);
   }
+  if (pageType === PAGETYPE_RECRUITER) {
+    linkedIn = data.publicLink;
+  }
 
   // Remove trailing slash
   if (linkedIn && linkedIn.slice(-1) === '/') {
@@ -372,19 +396,20 @@ function getLinkedIn(url) {
   return linkedIn;
 }
 
+const parseJsonIfPossible = (rawJson) => {
+  try {
+    return JSON.parse(rawJson);
+  } catch (e) {
+    console.log('error parsing data:' + e);
+    return {};
+  }
+};
+
 // Gets the LinkedIn data in JSON format and loads it into global var data
 function initData() {
   console.log('doing initData');
   const codes = document.querySelectorAll('code');
   console.log('codes: ' + codes.length);
-  const parseJsonIfPossible = (rawJson) => {
-    try {
-      return JSON.parse(rawJson);
-    } catch (e) {
-      console.log('error parsing data:' + e);
-      return {};
-    }
-  };
 
   for (let i = 0; i < codes.length; i += 1) {
     // decodeURIComponent sometimes gave errors
@@ -408,40 +433,86 @@ function initData() {
   }
 }
 
+function initRecruiterData() {
+  // Captured as soon as page loads
+  if (recruiterProfileData) {
+    // Remove comments in first and last characters
+    if (recruiterProfileData.substr(0, 4) === '<!--' &&  recruiterProfileData.substr(-3) === '-->') {
+      recruiterProfileData = recruiterProfileData.substring(4, recruiterProfileData.length - 3);
+    }
+    try {
+      data = JSON.parse(recruiterProfileData);
+    } catch (e) {
+      console.log('parsing failed'); // for ' + recruiterProfileData + '. Now try with decoding.');
+      data = parseJsonIfPossible(decodeURIComponent(recruiterProfileData));
+    }
+    data = data.profile;
+    console.log(data);
+  }
+}
+
+function changeSelectEducation(educationId) {
+  console.log('changeSelectEducation for ' + educationId);
+  if (iFrameDOM.find('#education' + educationId + '-select').is(':checked')) {
+    iFrameDOM.find('#education' + educationId + '-degree').removeAttr('disabled');
+    iFrameDOM.find('#education' + educationId + '-field-of-study').removeAttr('disabled');
+    iFrameDOM.find('#education' + educationId + '-institution').removeAttr('disabled');
+  } else {
+    iFrameDOM.find('#education' + educationId + '-degree').attr('disabled', 'disabled');
+    iFrameDOM.find('#education' + educationId + '-field-of-study').attr('disabled', 'disabled');
+    iFrameDOM.find('#education' + educationId + '-institution').attr('disabled', 'disabled');
+  }
+}
+
 function getEducations() {
   if(data.educations) {
     educationsMap = new Map();
     for (let e = 0; e < data.educations.length; e++) {
       const education = data.educations[e];
-      const newEducation = {  eduId: education.eduId,
+      const newEducation = {  educationId: (pageType === PAGETYPE_RECRUITER ? education.educationId : education.eduId),
                               degree: education.degree,
-                              institution: education.schoolName };
+                              fieldOfStudy: education.fieldOfStudy,
+                              institution: education.schoolName,
+                              startDateYear: education.startDateYear,
+                              endDateYear: education.endDateYear };
       if (education.startedOn) {
         newEducation.startDate = { year: education.startedOn.year, month: education.startedOn.month, day: education.startedOn.day };
       }
       if (education.endedOn) {
         newEducation.endDate = { year: education.endedOn.year, month: education.endedOn.month, day: education.endedOn.day };
       }
-      // Set eduId key as string
-      educationsMap.set('' + education.eduId, newEducation);
+      // Set educationId key as string
+      educationsMap.set('' + newEducation.educationId, newEducation);
     }
   }
 
   let html  = '';
   educationsMap.forEach(function (education, key, map) {
     html += '<div class="education">';
-    html += ' <input type="hidden" class="education-id" value="' + education.eduId + '"/>';
+    html += ' <input type="hidden" class="education-id" value="' + education.educationId + '"/>';
     html += '  <div class="form-check">';
-    html += '    <input type="checkbox" class="form-check-input education-select" id="education' + key + '-select"  checked="checked"/>';
+    html += '    <input type="checkbox" data-education-id="' + education.educationId + '" class="form-check-input education-select" id="education' + key + '-select"  checked="checked"/>';
     html += '    <label for="education' + key + '-select" class="form-check-label">Select</label>';
     html += '  </div>';
-    html += '  <div class="form-group">';
-    html += '    <label for="educations' + key + '-degree">Degree</label>';
-    html += '    <input type="text" class="form-control education-degree" id="education' + key + '-degree" value="' + education.degree + '" />';
+    html += '  <div>';
+    html += '    <div class="form-row">';
+    html += '      <div class="col-4">';
+    html += '    <label for="education' + key + '-degree">Degree</label>';
+    html += '        <input type="text" class="form-control education-degree" id="education' + key + '-degree" value="' + (education.degree || '') + '" />';
+    html += '      </div>';
+    html += '      <div class="col-8">';
+    html += '       <label for="education' + key + '-field-of-study">Field of Study</label>';
+    html += '        <input type="text" class="form-control education-degree" id="education' + key + '-field-of-study" value="' + (education.fieldOfStudy || '') + '" />';
+    html += '      </div>';
+    html += '    </div>';
     html += '  </div>';
     html += '  <div class="form-group">';
     html += '    <label for="educations' + key + '-institution">Institution</label>';
-    html += '    <input type="text" class="form-control education-institution" id="education' + key + '-institution" value="' + education.institution + '"/>';
+    html += '    <input type="text" class="form-control education-institution" id="education' + key + '-institution" value="' + (education.institution || '') + '"/>';
+    // Only show dates if at least start date or end date is filled in
+    if (education.startDateYear || education.endDateYear) {
+      html += '    <small class="form-text text-muted">' + (education.startDateYear || '') + ' - ' + (education.endDateYear || '') + '</small>';
+    }
     html += '  </div>';
     html += '</div>';
   });
@@ -449,43 +520,57 @@ function getEducations() {
   iFrameDOM.find('#educations').html(html);
 }
 
+function changeSelectPosition(positionId) {
+  console.log('changeSelectPosition for ' + positionId);
+  if (iFrameDOM.find('#position' + positionId + '-select').is(':checked')) {
+    iFrameDOM.find('#position' + positionId + '-title').removeAttr('disabled');
+    iFrameDOM.find('#position' + positionId + '-company').removeAttr('disabled');
+  } else {
+    iFrameDOM.find('#position' + positionId + '-title').attr('disabled', 'disabled');
+    iFrameDOM.find('#position' + positionId + '-company').attr('disabled', 'disabled');
+  }
+}
+
 function getPositions() {
   if (data.positions) {
     positionsMap = new Map();
     for (let p = 0; p < data.positions.length; p++) {
       const position = data.positions[p];
-      const newPosition = { posId: position.posId,
+      const newPosition = { positionId: (pageType === PAGETYPE_RECRUITER ? position.positionId : position.posId),
                             current: position.current,
                             title: position.title,
                             companyName: position.companyName,
                             description: position.description,
                             location: position.location };
+
       if (position.startedOn) {
         newPosition.startDate = { year: position.startedOn.year, month: position.startedOn.month, day: position.startedOn.day };
       }
       if (position.endedOn) {
         newPosition.endDate = { year: position.endedOn.year, month: position.endedOn.month, day: position.endedOn.day };
       }
-      // Set posId key as string
-      positionsMap.set('' + position.posId, newPosition);
+      // Set positionId key as string
+      positionsMap.set('' + newPosition.positionId, newPosition);
     }
   }
 
   let html  = '';
   positionsMap.forEach(function (position, key, map) {
     html += '<div class="position">';
-    html += ' <input type="hidden" class="position-id" value="' + position.posId + '"/>';
+    html += ' <input type="hidden" class="position-id" value="' + position.positionId + '" />';
     html += '  <div class="form-check">';
-    html += '    <input type="checkbox" class="form-check-input position-select" id="position' + key + '-select"  checked="checked"/>';
+    html += '    <input type="checkbox" data-position-id="' + position.positionId + '" class="form-check-input position-select" id="position' + key + '-select" checked="checked"/>';
     html += '    <label for="position' + key + '-select" class="form-check-label">Select</label>';
     html += '  </div>';
     html += '  <div class="form-group">';
-    html += '    <label for="positions' + key + '-title">Title</label>';
+    html += '    <label for="positions' + key + '-title">Title</label> ';
+    html += position.current ? '<span class="badge badge-info">Current</span>' : '<span class="badge badge-light">Past</span>';
     html += '    <input type="text" class="form-control position-title" id="position' + key + '-title" value="' + position.title + '" />';
     html += '  </div>';
     html += '  <div class="form-group">';
     html += '    <label for="positions' + key + '-company">Company</label>';
     html += '    <input type="text" class="form-control position-company" id="position' + key + '-company" value="' + position.companyName + '"/>';
+    html += '    <small class="form-text text-muted">' +  (position.startDateYear || '') + ' - ' + (position.endDateYear || '') + (position.location ? ' | ' + position.location : '') + '</small>';
     html += '  </div>';
     html += '</div>';
   });
@@ -511,6 +596,11 @@ function fillForm() {
   let website = '';
   let twitter = '';
 
+  let dutch = '';
+  let english = '';
+  let french = '';
+  let german = '';
+
   let phones = [];
   let emails = [];
   let websites = [];
@@ -523,7 +613,7 @@ function fillForm() {
   console.log('pageType: ' + pageType);
 
 
-  if (pageType === PAGETYPE_SALES_NAVIGATOR) {
+  if (pageType === PAGETYPE_SALES_NAVIGATOR || pageType === PAGETYPE_RECRUITER) {
     console.log('Processing Sales Navigator Profile');
 
     // name
@@ -582,14 +672,45 @@ function fillForm() {
     // LinkedIn
     linkedIn = getLinkedIn();
 
-    // Jobs
-    getJobs();
+    if (pageType === PAGETYPE_SALES_NAVIGATOR) {
+      // Jobs
+      getJobs();
+    }
+    if (pageType === PAGETYPE_RECRUITER) {
+      // Languages
+      if (data.languages) {
+        for (let l = 0; l < data.languages.length; l++) {
+          const language = data.languages[l];
+          console.log('language.languageName:' + language.languageName);
+          // LanguageName is a free text field in LinkedIn
+          switch (language.languageName) {
+            case 'English':
+            case 'Engels':
+              english = language.proficiency;
+              break;
 
-    // Educations
-    getEducations();
+            case 'French':
+            case 'Frans':
+              french = language.proficiency;
+              break;
 
-    // Positions
-    getPositions();
+            case 'German':
+            case 'Duits':
+              german = language.proficiency;
+              break;
+
+            case 'Dutch':
+            case 'Nederlands':
+              dutch = language.proficiency;
+              break;
+          }
+        }
+      }
+      // Educations
+      getEducations();
+      // Positions
+      getPositions();
+    }
 
   } else if (pageType ===  PAGETYPE_REGULAR_LINKEDIN) {
     console.log('processing regular LinkedIn profile');
@@ -676,6 +797,22 @@ function fillForm() {
     iFrameDOM.find('#twitter').val(twitter);
   }
 
+  if (iFrameDOM.find('#english')) {
+    iFrameDOM.find('#english').val(english);
+  }
+
+  if (iFrameDOM.find('#french')) {
+    iFrameDOM.find('#french').val(french);
+  }
+
+  if (iFrameDOM.find('#german')) {
+    iFrameDOM.find('#german').val(german);
+  }
+
+  if (iFrameDOM.find('#dutch')) {
+    iFrameDOM.find('#dutch').val(dutch);
+  }
+
 }
 
 function createForm() {
@@ -687,12 +824,13 @@ function createForm() {
     for (let f = 0; f < FIELDS.length; f++) {
       if (FIELDS[f].name === 'firstName' || FIELDS[f].name === 'lastName') {
         if (!nameShown) {
-          html += '<label>Name</label>';
           html += '<div class="form-row">';
           html += ' <div class="col">';
+          html += '  <label for="firstName">First Name</label>';
           html += '  <input type="text" class="form-control" id="firstName" name="firstName" />';
           html += ' </div>';
           html += ' <div class="col">';
+          html += '  <label for="lastName">Last Name</label>';
           html += '  <input type="text" class="form-control" id="lastName" name="lastName" />';
           html += ' </div>';
           html += '</div>';
@@ -724,26 +862,6 @@ function createForm() {
       }
     }
   }
-
-  /* html += '<div class="dropdown">';
-  html += '      <button id="dLabel" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">';
-  html += '          Dropdown trigger';
-  html += '          <span class="caret"></span>';
-  html += '      </button>';
-
-  html += '    <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">';
-  html += '        <li role="presentation" class="dropdown">';
-  html += '            <a role="menuitem" tabindex="-1" href="#">';
-  html += '                Much much much longer text not fitting when resizing';
-  html += '            </a>';
-  html += '        </li>';
-  html += '        <li role="presentation" class="dropdown">';
-  html += '            <a role="menuitem" tabindex="-1" href="#">';
-  html += '                Smaller text';
-  html += '            </a>';
-  html += '        </li>';
-  html += '    </ul>';
-  html += '  </div>'; */
 
   if (edition === EDITION_BUSINESS_DEVELOPER) {
     html += '<h3>Current Positions</h3>';
@@ -781,11 +899,13 @@ function createForm() {
     html += '<br/>';
   }
   if (edition === EDITION_RECRUITER) {
+    html += '<br/>';
     html += '<h3>Positions</h3>';
     html += '<div id="positions"></div>';
     html += '<br/>';
     html += '<h3>Educations</h3>';
     html += '<div id="educations"></div>';
+    html += '<br/>';
   }
   /* html += '<div class="form-check form-check-inline">';
   html += ' <input class="form-check-input" type="radio" name="save-as" id="save-as-lead" value="lead" checked />';
@@ -822,6 +942,9 @@ function createFrameTemplate() {
   html += '  background: white;';
   html += '  color: black;';
   html += '}';
+  html += '.btn-primary {';
+  html += '  background-color: ' + darkColor + ';';
+  html += '}';
   html += '#profile-picture {';
   html += '  margin-top: 20px;'
   html += '  border-radius: 50%;';
@@ -848,10 +971,12 @@ function createFrameTemplate() {
   html += '  padding-top: 5px;';
   html += '}';
   html += 'div.position {';
-  html += '  margin-top: 35px;';
+  html += '  margin-top: 15px;';
+  html += '  margin-bottom: 35px;';
   html += '}';
   html += 'div.education {';
-  html += '  margin-top: 35px;';
+  html += '  margin-top: 15px;';
+  html += '  margin-bottom: 35px;';
   html += '}';
   html += '#logout-button { float: left; }';
   html += '#minimize-button { float: right; }';
@@ -884,43 +1009,63 @@ function createFrameTemplate() {
 }
 
 function createContactSidebar(contact, contacts, linkedIn, name, profilePictureURL) {
-  let isProfilePage = (pageType === PAGETYPE_SALES_NAVIGATOR || pageType === PAGETYPE_REGULAR_LINKEDIN);
+  let isProfilePage = (pageType === PAGETYPE_SALES_NAVIGATOR || pageType === PAGETYPE_REGULAR_LINKEDIN || pageType === PAGETYPE_RECRUITER);
   let objectPlural = (mode === SAVEAS_MODE_LEAD ? 'leads' : 'contacts') ;
   let objectSingular = (mode === SAVEAS_MODE_LEAD ? 'lead' : 'contact');
+
+  const createCreateContactButton = (linkedIn, objectSingular, isProfilePage) => {
+    if (isProfilePage) {
+      return '<a class="btn btn-primary" href="!#" id="create-contact-button">Create ' + objectSingular + '</a>';
+    } else {
+      return '<a class="btn btn-primary" href="' + linkedIn + '" target="_blank">Go to profile and create ' + objectSingular + '</a>';
+    }
+  };
 
   let html = '';
   html += '<img id="profile-picture" src="' + profilePictureURL + '" class="mx-auto d-block"/>';
   html += '<br/>';
   html += '<h2 class="text-center">' + name + '</h2>';
   if (!isProfilePage) {
-    html += '<p class="text-center"><a href="' + linkedIn + '" target="_blank">View LinkedIn Profile</a></p>';
+    html += '<p class="text-center">';
+    html += '<a href="' + linkedIn + '" target="_blank" class="btn btn-light">View LinkedIn Profile</a>';
+    if (contact) {
+      html += '<a href="' + contact.link + '" target="_blank" class="btn btn-light" style="margin-left: 10px;">View in Salesforce</a>';
+    }
+    '</p>';
   }
   if (contact) {
-    html += '<p class="text-center"><a href="' + contact.link + '" target="_blank">View in Salesforce</a></p>';
+    html += '<p>';
     html += 'Title: ' + replateNullWithNA(contact.title) + '<br/>';
     html += 'Company: ' + replateNullWithNA(contact.company);
+    html += "</p>";
     if (isProfilePage) {
-      html += '<br/><br/><button class="btn btn-primary" id="open-form-button">Open Form</button>';
+      html += '<button class="btn btn-primary" id="open-form-button">Open Form</button>';
     }
+    html += '<br/><br/><h4>Recent Activity</h4>';
+    html += '<div id="tasks"></div>';
   }
   if (contacts) {
     if (contacts.length === 0) {
-      html += 'We did not find any ' + objectPlural + ' with the name <b>' + name + '</b>.';
+      html += '<p>We did not find any ' + objectPlural + ' with the name <b>' + name + '</b>.</p>';
+      if (pageType === PAGETYPE_LINKEDIN_MESSAGING) {
+        html += '<small class="form-text text-muted">Contacts need to be saved in the CRM and linked to the LinkedIn profile before messages can be saved related to them.</small>';
+      }
       html += '<br/><br/>';
       html += '<p class="text-center">';
-      if (isProfilePage) {
-        html += '<a class="btn btn-primary" href="!#" id="create-contact-button">Create ' + objectSingular + '</a>';
-      } else {
-        html += '<a class="btn btn-primary" href="' + linkedIn + '" target="_blank">Go to profile and create ' + objectSingular + '</a>';
-      }
+      html += createCreateContactButton(linkedIn, objectSingular, isProfilePage);
       html += '</p>';
     } else {
       html += 'We found one or more ' + objectPlural + ' in Salesforce with this name, which are <b>not linked</b> to this LinkedIn profile:<br/><br/>';
+      html += '<ul class="list-group">';
       for (let c = 0; c < contacts.length; c++) {
-        html += '<p style="float: left; "><a href="' + contacts[c].link + '" target="_blank">' + contacts[c].name + '</a></p>';
-        html += '<p style="float: right; "><a class="btn btn-primary link-contact" href="!#" id="' + contacts[c].id + '">' + LINK_CONTACT_BUTTON_LABEL + '</a></p>';
-        html += '<br/><br/>';
+        html += '<li class="list-group-item d-flex justify-content-between align-items-center">';
+        html += '<a href="' + contacts[c].link + '" target="_blank">' + contacts[c].name + '</a>';
+        html += '<a class="btn btn-primary link-contact" href="!#" id="' + contacts[c].id + '">' + LINK_CONTACT_BUTTON_LABEL + '</a>';
+        html += '</li>';
       }
+      html += '</ul>';
+      html += '<br/><br/>';
+      html += createCreateContactButton(linkedIn, objectSingular, isProfilePage);
       html += '<div id="link-contact-error" class="alert alert-danger" style="display: none"></div>';
     }
   }
@@ -1004,16 +1149,12 @@ function linkContact(contactId, linkedIn) {
                      userId,
                      apiKey };
 
-  console.log('postData:' + JSON.stringify(postData));
-
-  // hideMessages();
   // iFrameDOM.find('#submit-button').html('<i class="fa fa-circle-o-notch fa-spin"></i> Saving...');
   iFrameDOM.find('#link-contact-error').css('display', 'none');
   iFrameDOM.find('#link-contact-error').text('');
   $.post(SERVER_URL + '/contact/update', postData, (result) => {
     // Reset button
     iFrameDOM.find('#' + contactId).html(LINK_CONTACT_BUTTON_LABEL);
-    console.log(JSON.stringify(result));
     if (result.success) {
       loadFrameContent();
     } else {
@@ -1035,8 +1176,8 @@ function getSelectedPositions() {
   iFrameDOM.find('.position').each((index, position) => {
     if ($(position).find('.form-check-input').is(':checked')) {
       // Get position details from map
-      const posId = $(position).find('.position-id').val();
-      const newPosition = positionsMap.get(posId);
+      const positionId = $(position).find('.position-id').val();
+      const newPosition = positionsMap.get(positionId);
       // Overwrite title and companyname with values from inputs
       newPosition.title = $(position).find('.position-title').val();
       newPosition.companyName = $(position).find('.position-company').val();
@@ -1053,8 +1194,8 @@ function getSelectionEducations() {
   iFrameDOM.find('.education').each((index, education) => {
     if ($(education).find('.form-check-input').is(':checked')) {
       // Get education details from map
-      const eduId = $(education).find('.education-id').val();
-      const newEducation = educationsMap.get(eduId);
+      const educationId = $(education).find('.education-id').val();
+      const newEducation = educationsMap.get(educationId);
       // Overwrite degree and institution with values from inputs
       newEducation.degree = $(education).find('.education-degree').val();
       newEducation.institution = $(education).find('.education-institution').val();
@@ -1073,7 +1214,12 @@ function submit() {
   // Get all elements in the form and put them in an array
   const valuesArray = [];
   iFrameDOM.find('.form-control').each((index, field) => {
-    if ($(field).hasClass('position-title') && $(field).hasClass('position-company')) {
+    if (!$(field).hasClass('position-title') &&
+      !$(field).hasClass('position-company') &&
+      !$(field).hasClass('education-degree') &&
+      !$(field).hasClass('education-institution') &&
+      $(field).val()) {
+
       console.log('mapping ' + $(field).prop('id') + ' to ' + $(field).val());
       valuesArray.push([$(field).prop('id'), $(field).val()]);
     }
@@ -1125,7 +1271,6 @@ function login() {
   const postData = { email, password };
 
   $.post(SERVER_URL + '/login', postData, (result) => {
-    console.log(JSON.stringify(result));
     if (result.success) {
       console.log('successful login');
       setLoginVars(result.userId, result.apiKey);
@@ -1218,74 +1363,84 @@ function openSearchCompanyPopup() {
   iFrameDOM.find('#search-company-popup').collapse('toggle');
 }
 
+function createMessageTaskLink(tasks, tasksWithoutSpaces, tempMessage, messageGroup, i) {
+  let taskExists = false;
+  let taskLink = '';
+  let taskMatchCounter = tasksWithoutSpaces.indexOf(tempMessage.replace(/\s/g,''));
+  if (taskMatchCounter > -1) {
+    console.log('MESSAGE EXISTS!' + tempMessage);
+    taskExists = true;
+    taskLink = tasks[taskMatchCounter].link;
+  }
+
+  if (tempMessage) {
+    // Create link for last line
+    createTaskLink(messageGroup, i, taskExists, taskLink);
+
+    // Save this message
+    MESSAGES.push(tempMessage);
+  }
+}
+
 function createMessageTaskLinks(tasks) {
   let profileLink;
   let profileURL;
-  let previousProfileURL;
   let author;
-  let previousAuthor;
   let tempMessage = '';
   let message;
   let previousMessageGroup;
   let numberOfListItems = $('.msg-s-event-listitem').length;
   let tasksWithoutSpaces = [];
+  MESSAGES = [];
 
   if (tasks) {
-    for (let t = 0; t < tasks[t].length; t++) {
+    for (let t = 0; t < tasks.length; t++) {
       const task = tasks[t];
       if (task.description) {
         tasksWithoutSpaces.push(task.description.replace(/\s/g,''));
       }
     }
-    console.log(JSON.stringify(tasksWithoutSpaces));
+    console.log('tasksWithoutSpaces:' + JSON.stringify(tasksWithoutSpaces));
   }
 
   let i = 0;
 
   $('.msg-s-event-listitem').each((index, messageGroup) => {
 
-      profileLink = $(messageGroup).find('.msg-s-message-group__profile-link');
-      profileURL = profileLink.prop('href') || previousProfileURL;
-      author = profileLink.text().trim() || previousAuthor;
-      message = $(messageGroup).find('.msg-s-event-listitem__body').text().trim();
+    profileLink = $(messageGroup).find('.msg-s-message-group__profile-link');
+    profileURL = profileLink.prop('href');
+    author = profileLink.text().trim();
+    message = $(messageGroup).find('.msg-s-event-listitem__body').text().trim();
+    console.log('index:' + index);
+    console.log('numberOfListItems:' + numberOfListItems);
+    console.log(messageGroup);
 
-      if (message) {
-        if (index === 0) {
-          previousAuthor = author;
-        }
-        if (author === previousAuthor && index !== (numberOfListItems -1)) {
-          // Add messages together if they are from the same author
-          tempMessage += (tempMessage ? '\n' : '') + message;
-        } else {
+    if (message) {
+      // if no author is printed: belongs to previous author
+      if (!author && index !== (numberOfListItems - 1)) {
+        // Add messages together if they are from the same author
+        tempMessage += (tempMessage ? '\n' : '') + message;
+      } else {
+        console.log('createMessageTaskLink 1');
+        createMessageTaskLink(tasks, tasksWithoutSpaces, tempMessage, previousMessageGroup, i);
 
-          let taskExists = false;
-          let taskLink = '';
-          let taskMatchCounter = tasksWithoutSpaces.indexOf(tempMessage.replace(/\s/g,''));
-          if (taskMatchCounter > -1) {
-            console.log('MESSAGE EXISTS!' + tempMessage);
-            taskExists = true;
-            taskLink = tasks[taskMatchCounter].link;
-          }
-
-          createLink(previousMessageGroup, i, tempMessage, taskExists, taskLink);
-
-          // Start new message
-          tempMessage = message;
-          i++;
-        }
-
-        // For the last line
-        if (index === (numberOfListItems -1)) {
-          createLink(messageGroup, i, tempMessage);
-        }
+        // Start new message
+        tempMessage = message;
+        i++;
       }
+    }
 
-      previousProfileURL = profileURL;
-      previousAuthor = author;
-      // Store the last messageGroup with the name of the person, since that's where we want to add the link
-      if (profileLink.text().trim()) {
-        previousMessageGroup = messageGroup;
-      }
+    // For the last line (needs to be outside of if (message){} logic as last message can be connection request confirmation which is no message)
+    if (index === (numberOfListItems - 1)) {
+      console.log('createMessageTaskLink 2');
+      const messageGroupToShowLinkFor = (message ? messageGroup : previousMessageGroup);
+      createMessageTaskLink(tasks, tasksWithoutSpaces, tempMessage, messageGroupToShowLinkFor, i);
+    }
+
+    // Store the last messageGroup with the name of the person, since that's where we want to add the link
+    if (profileLink.text().trim()) {
+      previousMessageGroup = messageGroup;
+    }
 
   });
 }
@@ -1295,7 +1450,6 @@ function populateForm() {
   // NO NEED TO EXECUTE THIS BEFORE THE FORM IS LOADED?
   const postData = { userId, apiKey };
   $.post(SERVER_URL + '/fields', postData, (result) => {
-    console.log(JSON.stringify(result));
     if (result.success) {
       FIELDS = result.fields;
       FIELDNAMES = result.fieldNames;
@@ -1313,6 +1467,16 @@ function populateForm() {
       iFrameDOM.find('input[name=save-as]').each(function(index, radio) {
         radio.addEventListener("change", switchSaveAsMode);
       });
+      iFrameDOM.find('.position-select').each(function(index, select) {
+        $(select).change(changeSelectPosition($(select).attr('data-position-id')));
+        // select.addEventListener("change", );
+      });
+      iFrameDOM.find('.education-select').each(function(index, select) {
+        $(select).change(changeSelectEducation($(select).attr('data-education-id')));
+        // select.addEventListener("change", );
+      });
+
+
       iFrameDOM.find('#form').submit((event) => {
         // Prevent reloading the page
         event.preventDefault();
@@ -1370,9 +1534,21 @@ function getProfilePictureURL() {
     return pictureElement.prop('src');
   }
 
+  if (pageType === PAGETYPE_RECRUITER) {
+    if (data) {
+      // take the 200x200 shrink
+      if (data && data.vectorImage && data.vectorImage.artifacts && data.vectorImage.artifacts.length >= 2) {
+        return data.vectorImage.rootUrl + data.vectorImage.artifacts[1].fileIdentifyingUrlPathSegment;
+      } else {
+        console.log('something went wrong getting vectorImage');
+      }
+    } else {
+      console.log('getProfilePictureURL: data not initialized');
+    }
+  }
+
   if (pageType === PAGETYPE_REGULAR_LINKEDIN) {
     pictureElement = $('.pv-top-card-section__photo');
-    console.log('pictureElement:' + pictureElement);
     if (pictureElement.length > 0) {
       return getBackgroundImageURLFromElement(pictureElement);
     } else {
@@ -1440,7 +1616,10 @@ function populateLoadingSidebar() {
 
 function getProfilePictureFromMessagingPage() {
   let profilePictureURL;
-  $('.msg-conversation-listitem__link.active').each((index, messageGroup) => {
+
+  const getProfilePictureFromMessageGroup = (messageGroup) => {
+    let profilePictureURL;
+
     let authorPictureElement = $(messageGroup).find('.presence-entity__image');
     if (authorPictureElement.length === 0) {
       authorPictureElement = $(messageGroup).find('.msg-facepile-grid__img--person');
@@ -1449,14 +1628,57 @@ function getProfilePictureFromMessagingPage() {
       profilePictureURL = getBackgroundImageURLFromElement(authorPictureElement);
     }
 
-    console.log('we have a picture:' + profilePictureURL);
-  });
+    return profilePictureURL;
+  };
+
+
+  // Get image from active conversation
+  let activeConversationsSelector = $('.msg-conversation-listitem__link.active');
+  if (activeConversationsSelector.length > 0) {
+    $(activeConversationsSelector).each((index, messageGroup) => {
+      profilePictureURL = getProfilePictureFromMessageGroup(messageGroup);
+    });
+  } else {
+    console.log('no active conversations');
+    // Looks like there is always an active conversation, it may just not be visible yet
+    // If no conversation is marked as active (because user loaded the page on this conversation):
+    // Check the href from the conversations to see which one is the current page
+    // This will only work for the visible conversations
+    /* $('.msg-conversation-listitem__link').each((index, messageGroup) => {
+      console.log('$(messageGroup).href' + $(messageGroup).attr('href'));
+      if ($(messageGroup).attr('href') === currentURL) {
+        console.log('active url');
+        profilePictureURL = getProfilePictureFromMessageGroup(messageGroup);
+      }
+    }); */
+  }
 
   return profilePictureURL;
 }
 
+function populateTasksInContactSidebar(tasks) {
+  if (tasks) {
+    let html = '';
+    if (tasks.length > 0) {
+      for (let t = 0; t < tasks.length; t++) {
+        html += '<div class="card">';
+        html += ' <div class="card-header"><a href="' + tasks[t].link + '" target="_blank">' + tasks[t].subject + '</a></div>';
+        html += '  <div class="card-body">';
+        html += '    <p class="card-text">' + tasks[t].description + '</p>';
+        html += '  </div>';
+        html += '</div>';
+      }
+    } else {
+      html += '<p>No recent activity</p>';
+    }
+    iFrameDOM.find('#tasks').html(html);
+  }
+}
+
 function loadFrameContent(urlHasChanged) {
   jobsDetected = false;
+  whoId = null;
+
   console.log('userId:' + userId + ' apiKey:' + apiKey);
   if (userId && apiKey) {
 
@@ -1466,9 +1688,15 @@ function loadFrameContent(urlHasChanged) {
     if (currentURL.indexOf('/sales/people') > -1) {
       // LinkedIn Sales Navigator page
       pageType = PAGETYPE_SALES_NAVIGATOR;
+      $.get('https://www.linkedin.com/sales-api/salesApiProfiles/(profileId:ACwAAAAbLHsB1rOR4ASFbEqmFbepIWgvJiZl25o,authType:NAME_SEARCH,authToken:Fqq2)?decoration=%28entityUrn%2CobjectUrn%2CpictureInfo%2CprofilePictureDisplayImage%2CfirstName%2ClastName%2CfullName%2Cheadline%2CmemberBadges%2Cdegree%2CprofileUnlockInfo%2Clocation%2Cindustry%2CnumOfConnections%2CinmailRestriction%2CsavedLead%2CdefaultPosition%2CcontactInfo%2Csummary%2CcrmStatus%2CpendingInvitation%2Cunlocked%2CrelatedColleagueCompanyId%2CnumOfSharedConnections%2CshowTotalConnectionsPage%2CconnectedTime%2CnoteCount%2CflagshipProfileUrl%2Cpositions*%2Ceducations*%2Ctags*~fs_salesTag%28entityUrn%2Ctype%2Cvalue%29%29',(response) => {
+        console.log('response:' + JSON.stringify(response));
+      });
     } else if (currentURL.indexOf('linkedin.com/in/') > -1){
       // Regular LinkedIn page
       pageType = PAGETYPE_REGULAR_LINKEDIN;
+    } else if (currentURL.indexOf('linkedin.com/recruiter/profile') > -1) {
+      // LinkedIn Recruiter page
+      pageType = PAGETYPE_RECRUITER;
     } else if (currentURL.indexOf('/mail.google.com/mail/u/0/?shva=1#inbox/') > -1) {
       // Gmail
       pageType = PAGETYPE_GMAIL;
@@ -1482,13 +1710,17 @@ function loadFrameContent(urlHasChanged) {
       maximize();
       if (pageType === PAGETYPE_SALES_NAVIGATOR) {
         initData();
-        if (data.flagshipProfileUrl === profileURL && urlHasChanged) {
-          console.log('we need to check again');
-          location.reload();
-          // setTimeout(function(){ loadFrameContent(); }, 1000);
-          // loadFrameContent()
+        if (data) {
+          if (data.flagshipProfileUrl === profileURL && urlHasChanged) {
+            console.log('we need to check again');
+            location.reload();
+            // setTimeout(function(){ loadFrameContent(); }, 1000);
+            // loadFrameContent()
+          } else {
+            profileURL = data.flagshipProfileUrl;
+          }
         } else {
-          profileURL = data.flagshipProfileUrl;
+          console.log('data init failed:' + JSON.stringify(data));
         }
       }
 
@@ -1509,13 +1741,26 @@ function loadFrameContent(urlHasChanged) {
           let getProfilePictureFromMessagingPageInterval = setInterval(() => {
             console.log('doing interval');
             profilePictureURL = getProfilePictureFromMessagingPage();
-            if (profilePictureURL) {
+            // We found an image which is not the LinkedIn provided dummy image
+            if (profilePictureURL && profilePictureURL !== 'https://static.licdn.com/sc/h/djzv59yelk5urv2ujlazfyvrk') {
               iFrameDOM.find('#profile-picture').attr('src', profilePictureURL);
               console.log('clearing interval');
               clearInterval(getProfilePictureFromMessagingPageInterval);
+            } else {
+              console.log('setting temp image');
+              // Temporarily set dummy image
+              if (iFrameDOM.find('#profile-picture').attr('src') !== faceImageURL) {
+                iFrameDOM.find('#profile-picture').attr('src', faceImageURL);
+              }
             }
-          }, 500);
+          }, 1000);
         }
+      } else if (pageType === PAGETYPE_RECRUITER) {
+        console.log('getting recruiter info');
+        initRecruiterData();
+        name = getName().name;
+        profilePictureURL = getProfilePictureURL();
+        linkedIn = getLinkedIn();
       } else {
         name = getName().name;
         profilePictureURL = getProfilePictureURL();
@@ -1527,6 +1772,7 @@ function loadFrameContent(urlHasChanged) {
                           userId,
                           apiKey };
 
+
       $.post(SERVER_URL + '/contact/search', postData, (result) => {
         console.log('result: ' + JSON.stringify(result));
         if (result.success) {
@@ -1535,28 +1781,28 @@ function loadFrameContent(urlHasChanged) {
           mode = result.mode;
 
           edition = result.edition;
-          console.log('edition on load:' + edition);
 
           if (contact) {
             whoId = (contact ? contact.id : null );
-            console.log('whoId:' + whoId);
           }
 
           populateContactSidebar(contact, contacts, linkedIn, name, profilePictureURL);
 
-          if (currentURL.indexOf('/messaging') > -1) {
-
-            if (whoId) {
-              const postData = { whoId,
-                                 userId,
-                                 apiKey };
-              $.post(SERVER_URL + '/tasks', postData, (result) => {
-                if (result.success) {
-                  const tasks = result.tasks;
+          if (whoId) {
+            const postData = { whoId,
+                               userId,
+                               apiKey,
+                               limit: 3 };
+            $.post(SERVER_URL + '/tasks', postData, (result) => {
+              console.log('/tasks result:' + JSON.stringify(result));
+              if (result.success) {
+                const tasks = result.tasks;
+                populateTasksInContactSidebar(tasks);
+                if (pageType === PAGETYPE_LINKEDIN_MESSAGING) {
                   createMessageTaskLinks(tasks);
                 }
-              });
-            }
+              }
+            });
           }
 
         } else {
@@ -1587,6 +1833,9 @@ function checkURLchange(){
 }
 
 $(document).ready(function(){
+  // Capture recruiter profile data as soon as page loads as it is removed later on
+  recruiterProfileData = $('code#profile-data').html();
+
   // logout();
   console.log('document ready, start loading');
   chrome.storage.sync.get('userId', function(userIdObj) {
@@ -1597,7 +1846,7 @@ $(document).ready(function(){
       // Avoid recursive frame insertion...
       var extensionOrigin = 'chrome-extension://' + chrome.runtime.id;
       if (!location.ancestorOrigins.contains(extensionOrigin)) {
-        let frameId = 'linkedforce-frame';
+        let frameId = 'leadexporter-frame';
         // Create iFrame
         iframe = document.createElement('iframe');
         iframe.id = frameId;
@@ -1614,7 +1863,7 @@ $(document).ready(function(){
         iframe.contentDocument.close();
 
         // Event handlers for menu items
-        iFrameDOM.find('[data-toggle="tooltip"]').tooltip();
+        // iFrameDOM.find('[data-toggle="tooltip"]').tooltip(); // To make this work, "js/popper.min.js", "js/bootstrap.min.js" needs to be in web_accessible_resources
         iFrameDOM.find('#minimize-button').click(minimize);
         iFrameDOM.find('#logout-button').click(logout);
         iFrameDOM.find('#back-button').click(loadFrameContent);
