@@ -35,10 +35,13 @@ var recruiterProfileData;
 var apiKey;
 var userId;
 let jobInterval;
+let createMessageTaskLinksInterval;
 let whoId;
 var data;
 var mode;
 var edition;
+var backendSystemName;
+var numberOfMessageItems = 0;
 
 // Positions for Business Developer edition
 let jobs = [];
@@ -160,51 +163,6 @@ function switchSaveAsMode() {
     console.log('showing contact');
     iFrameDOM.find("#company-input-lead").css("display", "none");
     iFrameDOM.find("#company-input-contact").css("display", "block");
-  }
-}
-
-function createTask(message, i) {
-  const authorLinkedIn = $('.msg-thread__topcard-btn').prop('href');
-  console.log('conversation with ' + authorLinkedIn);
-
-  const postData = { authorLinkedIn,
-                     message,
-                     userId,
-                     apiKey,
-                     whoId };
-
-  console.log('postData:' + JSON.stringify(postData));
-  $('#task-message-' + whoId + '-' + i).html('<b>Saving...</b>');
-  $.post(SERVER_URL + '/task', postData, (result) => {
-    console.log('result from creating task:' + JSON.stringify(result));
-    $('#task-message-' + whoId + '-' + i).html(createTaskSavedLink(result.link));
-  });
-}
-
-function createTaskSavedLink(link) {
-  return '<a href="' + link + '" target="_blank" style="color:green">Task saved</a>';
-}
-
-function createTaskLink(messageGroup, i, taskExists, recordLink) {
-  // Create the link and the event binder
-  let link;
-  if (taskExists) {
-    link = '<div id="task-message-' + whoId + '-' + i + '" style="margin-left: 10px;">' + createTaskSavedLink(recordLink) + '</div>';
-  } else {
-    link = '<div id="task-message-' + whoId + '-' + i + '" style="margin-left: 10px;"><a id=\"create-task-' + whoId + '-' + i + '\" data-counter="' + i + '" href=\"!#\">Create task</a></div>';
-  }
-  // Add link if it doesn't already exist
-  console.log('length: ' + $('#task-message-' + whoId + '-' + i).length);
-  if ($('#task-message-' + whoId + '-' + i).length === 0) {
-    $(messageGroup).find('.msg-s-message-group__meta').html($(messageGroup).find('.msg-s-message-group__meta').html() + link);
-    $('#create-task-' + whoId + '-' + i).on('click', function (e) {
-      e.preventDefault();
-      // Get the counter of the element that's clicked
-      const counter = $(this).attr('data-counter');
-      console.log('counter:' + counter + ' message:' + MESSAGES[counter - 1] + ' messages: ' + MESSAGES);
-
-      createTask(MESSAGES[counter - 1], counter);
-    });
   }
 }
 
@@ -818,10 +776,20 @@ function fillForm() {
 function createForm() {
   let html = '';
   html += '<form id="form">';
+  let isTitleRequired = false;
+  let isCompanyRequired  = false;
 
   if (FIELDS) {
     let nameShown = false;
     for (let f = 0; f < FIELDS.length; f++) {
+      // We set isXXXrequired fields here while looping through the fields, but generate them later
+      if (FIELDS[f].name === 'title' && FIELDS[f].required) {
+        isTitleRequired = true;
+      }
+      if (FIELDS[f].name === 'company' && FIELDS[f].required) {
+        isCompanyRequired = true;
+      }
+
       if (FIELDS[f].name === 'firstName' || FIELDS[f].name === 'lastName') {
         if (!nameShown) {
           html += '<div class="form-row">';
@@ -868,7 +836,7 @@ function createForm() {
     html += '<div id="jobs">Scroll down to load jobs</div>';
     html += '<div class="form-group">';
     html += '  <label for="title">Title</label>';
-    html += '  <input type="text" class="form-control" id="title" name="title" required />';
+    html += '  <input type="text" class="form-control" id="title" name="title" ' + (isTitleRequired ? 'required="required"' : '') + ' />';
     html += '</div>';
     html += '<div id="company-input">';
     html += '  <div class="form-group" id="company-input-lead">';
@@ -881,7 +849,7 @@ function createForm() {
     html += '      <div class="input-group-prepend">';
     html += '        <span class="input-group-text" id="open-search-company-form-button"><a href="#!"><i class="fa fa-search"></i></a></span>';
     html += '      </div>';
-    html += '      <input type="text" class="form-control company-input" id="company-name-contact" readonly required />';
+    html += '      <input type="text" class="form-control company-input" id="company-name-contact" readonly ' + (isCompanyRequired ? 'required="required"' : '') + '/>';
     html += '    </div>';
     html += '    <input type="hidden" id="company-id-contact" />';
     html += '  </div>';
@@ -918,7 +886,7 @@ function createForm() {
   html += '<br/>';*/
   html += '<div id="submit-success-message" class="alert alert-success"></div>';
   html += '<div id="submit-error-message" class="alert alert-danger"></div>';
-  html += '<button type="submit" id="submit-button" class="btn btn-primary">Save To CRM</button>';
+  html += '<button type="submit" id="submit-button" class="btn btn-primary">Save To ' + backendSystemName + '</button>';
   html += '</form>';
 
   return html;
@@ -1029,7 +997,7 @@ function createContactSidebar(contact, contacts, linkedIn, name, profilePictureU
     html += '<p class="text-center">';
     html += '<a href="' + linkedIn + '" target="_blank" class="btn btn-light">View LinkedIn Profile</a>';
     if (contact) {
-      html += '<a href="' + contact.link + '" target="_blank" class="btn btn-light" style="margin-left: 10px;">View in Salesforce</a>';
+      html += '<a href="' + contact.link + '" target="_blank" class="btn btn-light" style="margin-left: 10px;">View in ' + backendSystemName + '</a>';
     }
     '</p>';
   }
@@ -1042,20 +1010,20 @@ function createContactSidebar(contact, contacts, linkedIn, name, profilePictureU
       html += '<button class="btn btn-primary" id="open-form-button">Open Form</button>';
     }
     html += '<br/><br/><h4>Recent Activity</h4>';
-    html += '<div id="tasks"></div>';
+    html += '<div id="tasks">Loading...</div>';
   }
   if (contacts) {
     if (contacts.length === 0) {
       html += '<p>We did not find any ' + objectPlural + ' with the name <b>' + name + '</b>.</p>';
       if (pageType === PAGETYPE_LINKEDIN_MESSAGING) {
-        html += '<small class="form-text text-muted">Contacts need to be saved in the CRM and linked to the LinkedIn profile before messages can be saved related to them.</small>';
+        html += '<small class="form-text text-muted">Contacts need to be saved in ' + backendSystemName + ' and linked to the LinkedIn profile before messages can be saved related to them.</small>';
       }
       html += '<br/><br/>';
       html += '<p class="text-center">';
       html += createCreateContactButton(linkedIn, objectSingular, isProfilePage);
       html += '</p>';
     } else {
-      html += 'We found one or more ' + objectPlural + ' in Salesforce with this name, which are <b>not linked</b> to this LinkedIn profile:<br/><br/>';
+      html += 'We found one or more ' + objectPlural + ' in ' + backendSystemName + ' with this name, which are <b>not linked</b> to this LinkedIn profile:<br/><br/>';
       html += '<ul class="list-group">';
       for (let c = 0; c < contacts.length; c++) {
         html += '<li class="list-group-item d-flex justify-content-between align-items-center">';
@@ -1363,6 +1331,52 @@ function openSearchCompanyPopup() {
   iFrameDOM.find('#search-company-popup').collapse('toggle');
 }
 
+function createTask(message, i) {
+  const authorLinkedIn = $('.msg-thread__topcard-btn').prop('href');
+  console.log('conversation with ' + authorLinkedIn);
+
+  const postData = { authorLinkedIn,
+                     message,
+                     userId,
+                     apiKey,
+                     whoId };
+
+  console.log('postData:' + JSON.stringify(postData));
+  $('#task-message-' + whoId + '-' + i).html('<b>Saving...</b>');
+  $.post(SERVER_URL + '/task', postData, (result) => {
+    console.log('result from creating task:' + JSON.stringify(result));
+    $('#task-message-' + whoId + '-' + i).html(createTaskSavedLink(result.link));
+    loadTasks();
+  });
+}
+
+function createTaskSavedLink(link) {
+  return '<a href="' + link + '" target="_blank" style="color:green">Task saved</a>';
+}
+
+function createTaskLink(messageGroup, i, taskExists, recordLink) {
+  // Create the link and the event binder
+  let link;
+  if (taskExists) {
+    link = '<div id="task-message-' + whoId + '-' + i + '" class="task-message" style="margin-left: 10px;">' + createTaskSavedLink(recordLink) + '</div>';
+  } else {
+    link = '<div id="task-message-' + whoId + '-' + i + '" class="task-message" style="margin-left: 10px;"><a id=\"create-task-' + whoId + '-' + i + '\" data-counter="' + i + '" href=\"!#\">Create task</a></div>';
+  }
+  // Add link if it doesn't already exist
+  console.log('length: ' + $('#task-message-' + whoId + '-' + i).length);
+  // if ($('#task-message-' + whoId + '-' + i).length === 0) {
+  $(messageGroup).find('.msg-s-message-group__meta').html($(messageGroup).find('.msg-s-message-group__meta').html() + link);
+  $('#create-task-' + whoId + '-' + i).on('click', function (e) {
+    e.preventDefault();
+    // Get the counter of the element that's clicked
+    const counter = $(this).attr('data-counter');
+    console.log('counter:' + counter + ' message:' + MESSAGES[counter - 1] + ' messages: ' + MESSAGES);
+
+    createTask(MESSAGES[counter - 1], counter);
+  });
+  // }
+}
+
 function createMessageTaskLink(tasks, tasksWithoutSpaces, tempMessage, messageGroup, i) {
   let taskExists = false;
   let taskLink = '';
@@ -1383,66 +1397,78 @@ function createMessageTaskLink(tasks, tasksWithoutSpaces, tempMessage, messageGr
 }
 
 function createMessageTaskLinks(tasks) {
-  let profileLink;
-  let profileURL;
-  let author;
-  let tempMessage = '';
-  let message;
-  let previousMessageGroup;
-  let numberOfListItems = $('.msg-s-event-listitem').length;
-  let tasksWithoutSpaces = [];
-  MESSAGES = [];
 
-  if (tasks) {
-    for (let t = 0; t < tasks.length; t++) {
-      const task = tasks[t];
-      if (task.description) {
-        tasksWithoutSpaces.push(task.description.replace(/\s/g,''));
+  if (numberOfMessageItems !== $('.msg-s-event-listitem').length) {
+    // Remove existing links
+    var paras = document.getElementsByClassName('task-message');
+    while (paras[0]) {
+      paras[0].parentNode.removeChild(paras[0]);
+    };
+
+    console.log('number of messages has changed');
+    numberOfMessageItems = $('.msg-s-event-listitem').length;
+    let profileLink;
+    let profileURL;
+    let author;
+    let tempMessage = '';
+    let message;
+    let previousMessageGroup;
+    let tasksWithoutSpaces = [];
+    MESSAGES = [];
+
+    if (tasks) {
+      for (let t = 0; t < tasks.length; t++) {
+        const task = tasks[t];
+        if (task.description) {
+          tasksWithoutSpaces.push(task.description.replace(/\s/g,''));
+        }
       }
+      console.log('tasksWithoutSpaces:' + JSON.stringify(tasksWithoutSpaces));
     }
-    console.log('tasksWithoutSpaces:' + JSON.stringify(tasksWithoutSpaces));
+
+    let i = 0;
+
+    $('.msg-s-event-listitem').each((index, messageGroup) => {
+
+      profileLink = $(messageGroup).find('.msg-s-message-group__profile-link');
+      profileURL = profileLink.prop('href');
+      author = profileLink.text().trim();
+      message = $(messageGroup).find('.msg-s-event-listitem__body').text().trim();
+      console.log('index:' + index);
+      console.log('numberOfMessageItems:' + numberOfMessageItems);
+      console.log(messageGroup);
+
+      if (message) {
+        // if no author is printed: belongs to previous author
+        if (!author && index !== (numberOfMessageItems - 1)) {
+          // Add messages together if they are from the same author
+          tempMessage += (tempMessage ? '\n' : '') + message;
+        } else {
+          console.log('createMessageTaskLink 1');
+          createMessageTaskLink(tasks, tasksWithoutSpaces, tempMessage, previousMessageGroup, i);
+
+          // Start new message
+          tempMessage = message;
+          i++;
+        }
+      }
+
+      // For the last line (needs to be outside of if (message){} logic as last message can be connection request confirmation which is no message)
+      if (index === (numberOfMessageItems - 1)) {
+        console.log('createMessageTaskLink 2');
+        const messageGroupToShowLinkFor = (message ? messageGroup : previousMessageGroup);
+        createMessageTaskLink(tasks, tasksWithoutSpaces, tempMessage, messageGroupToShowLinkFor, i);
+      }
+
+      // Store the last messageGroup with the name of the person, since that's where we want to add the link
+      if (profileLink.text().trim()) {
+        previousMessageGroup = messageGroup;
+      }
+
+    });
+  } else {
+    console.log('number of conversations checked and the same');
   }
-
-  let i = 0;
-
-  $('.msg-s-event-listitem').each((index, messageGroup) => {
-
-    profileLink = $(messageGroup).find('.msg-s-message-group__profile-link');
-    profileURL = profileLink.prop('href');
-    author = profileLink.text().trim();
-    message = $(messageGroup).find('.msg-s-event-listitem__body').text().trim();
-    console.log('index:' + index);
-    console.log('numberOfListItems:' + numberOfListItems);
-    console.log(messageGroup);
-
-    if (message) {
-      // if no author is printed: belongs to previous author
-      if (!author && index !== (numberOfListItems - 1)) {
-        // Add messages together if they are from the same author
-        tempMessage += (tempMessage ? '\n' : '') + message;
-      } else {
-        console.log('createMessageTaskLink 1');
-        createMessageTaskLink(tasks, tasksWithoutSpaces, tempMessage, previousMessageGroup, i);
-
-        // Start new message
-        tempMessage = message;
-        i++;
-      }
-    }
-
-    // For the last line (needs to be outside of if (message){} logic as last message can be connection request confirmation which is no message)
-    if (index === (numberOfListItems - 1)) {
-      console.log('createMessageTaskLink 2');
-      const messageGroupToShowLinkFor = (message ? messageGroup : previousMessageGroup);
-      createMessageTaskLink(tasks, tasksWithoutSpaces, tempMessage, messageGroupToShowLinkFor, i);
-    }
-
-    // Store the last messageGroup with the name of the person, since that's where we want to add the link
-    if (profileLink.text().trim()) {
-      previousMessageGroup = messageGroup;
-    }
-
-  });
 }
 
 function populateForm() {
@@ -1675,9 +1701,33 @@ function populateTasksInContactSidebar(tasks) {
   }
 }
 
+function loadTasks(cb) {
+  const postData = { whoId,
+                     userId,
+                     apiKey,
+                     limit: 3 };
+  $.post(SERVER_URL + '/tasks', postData, (result) => {
+    console.log('/tasks result:' + JSON.stringify(result));
+    if (result.success) {
+      const tasks = result.tasks;
+      populateTasksInContactSidebar(tasks);
+
+      if (pageType === PAGETYPE_LINKEDIN_MESSAGING) {
+        createMessageTaskLinks(tasks);
+      }
+
+      if (typeof cb === 'function') {
+        cb(tasks);
+      }
+    }
+  });
+}
+
 function loadFrameContent(urlHasChanged) {
   jobsDetected = false;
   whoId = null;
+  clearInterval(jobInterval);
+  clearInterval(createMessageTaskLinksInterval);
 
   console.log('userId:' + userId + ' apiKey:' + apiKey);
   if (userId && apiKey) {
@@ -1778,9 +1828,10 @@ function loadFrameContent(urlHasChanged) {
         if (result.success) {
           const contact = result.contact;
           const contacts = result.contacts;
-          mode = result.mode;
 
+          mode = result.mode;
           edition = result.edition;
+          backendSystemName = result.backendSystemName;
 
           if (contact) {
             whoId = (contact ? contact.id : null );
@@ -1789,18 +1840,12 @@ function loadFrameContent(urlHasChanged) {
           populateContactSidebar(contact, contacts, linkedIn, name, profilePictureURL);
 
           if (whoId) {
-            const postData = { whoId,
-                               userId,
-                               apiKey,
-                               limit: 3 };
-            $.post(SERVER_URL + '/tasks', postData, (result) => {
-              console.log('/tasks result:' + JSON.stringify(result));
-              if (result.success) {
-                const tasks = result.tasks;
-                populateTasksInContactSidebar(tasks);
-                if (pageType === PAGETYPE_LINKEDIN_MESSAGING) {
+            loadTasks((tasks) => {
+              if (pageType === PAGETYPE_LINKEDIN_MESSAGING) {
+                // Keep checking if the number of messages has changed since new messages could have been sent or just loaded by going further back into the conversation
+                createMessageTaskLinksInterval = setInterval(() => {
                   createMessageTaskLinks(tasks);
-                }
+                }, 1000);
               }
             });
           }
