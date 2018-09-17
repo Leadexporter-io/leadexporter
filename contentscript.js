@@ -946,6 +946,21 @@ function createFrameTemplate() {
   html += '  margin-top: 15px;';
   html += '  margin-bottom: 35px;';
   html += '}';
+  /* html += '*, ::after, ::before {';
+  html += '  box-sizing: border-box;';
+  html += '}'; */
+  html += '.collapse {';
+  html += '  display: block;';
+  html += '  padding: 0px;';
+  html += '  max-height: 0px;';
+  html += '  overflow: hidden;';
+  html += '  transition: max-height 0.5s cubic-bezier(0, 1, 0, 1);';
+  html += '}';
+  html += '.collapse.show {';
+  html += '  padding: 10px;';
+  html += '  max-height: 99em;';
+  html += '  transition: max-height 0.5s ease-in-out;';
+  html += '}';
   html += '#logout-button { float: left; }';
   html += '#minimize-button { float: right; }';
   html += '#job-selector { background: #fff; }';
@@ -955,7 +970,7 @@ function createFrameTemplate() {
   html += '#submit-success-message { display: none; }';
   html += 'input:valid { border-bottom: 1px solid green; }';
   html += 'input:invalid { border-bottom: 1px solid red; }';
-  html += '#search-company-popup { padding: 10px; border-radius: 4px; border: 1px solid #ccc; margin-top: -1px;}';
+  html += '#search-company-popup { border-radius: 4px; border: 1px solid #ccc; margin-top: -1px;}';
   html += '#search-company-query { border: 1px solid #ccc !important }'; // To avoid the query input having a green bar (coming from the 'valid' validation class)
   html += '</style>';
 
@@ -969,7 +984,7 @@ function createFrameTemplate() {
   html += '</div>';
   html += '<div id="content">';
   html += '</div>';
-  // html += '<script src="' + chrome.extension.getURL('js/bootstrap.min.js'); +'"/>';
+  // html += '<script src="' + bootstrapJSURL +'"/>';
   html += '</body>';
   html += '</html>';
 
@@ -1298,7 +1313,7 @@ function searchCompany() {
           iFrameDOM.find('#search-company-results').html(resultsHTML);
           iFrameDOM.find('#search-company-result-items a').on('click', function (e) {
             e.preventDefault();
-            $(this).tab('show');
+            // $(this).tab('show');
             const companyId = $(this).find('.company-id').val();
             const companyName = $(this).text();
             selectCompanyResult(companyId, companyName);
@@ -1315,6 +1330,21 @@ function searchCompany() {
 
 }
 
+// map our commands to the classList methods
+const fnmap = {
+  'toggle': 'toggle',
+    'show': 'add',
+    'hide': 'remove'
+};
+
+// Custom collapse function
+const collapse = (selector, cmd) => {
+  const targets = Array.from(iFrameDOM.find(selector));
+  targets.forEach(target => {
+    target.classList[fnmap[cmd]]('show');
+  });
+}
+
 function selectCompanyResult(companyId, companyName) {
   console.log('selected companyId:' + companyId + ' companyName:' + companyName);
   iFrameDOM.find('#search-company-results').html('');
@@ -1322,13 +1352,12 @@ function selectCompanyResult(companyId, companyName) {
   iFrameDOM.find('#company-id-contact').val(companyId);
 
   // Close the popup
-  iFrameDOM.find('#search-company-popup').collapse('hide');
+  collapse('#search-company-popup', 'hide');
 }
 
 function openSearchCompanyPopup() {
   console.log('openSearchCompanyPopup');
-  // iFrameDOM.find('#search-company-popup').collapse('show');
-  iFrameDOM.find('#search-company-popup').collapse('toggle');
+  collapse('#search-company-popup', 'toggle');
 }
 
 function createTask(message, i) {
@@ -1508,7 +1537,9 @@ function populateForm() {
         event.preventDefault();
         submit();
       });
-      iFrameDOM.find('#open-search-company-form-button').click(openSearchCompanyPopup);
+      iFrameDOM.find('#open-search-company-form-button').click(() => {
+        openSearchCompanyPopup();
+      });
       iFrameDOM.find('#search-company-query').keypress((event) => {
          // Since it's a nested form we cannot use submit: fake submit behaviour by accepting enter as a submit
          if (event.keyCode === 13 || event.which === 13) {
@@ -1728,6 +1759,7 @@ function loadFrameContent(urlHasChanged) {
   whoId = null;
   clearInterval(jobInterval);
   clearInterval(createMessageTaskLinksInterval);
+  numberOfMessageItems = 0;
 
   console.log('userId:' + userId + ' apiKey:' + apiKey);
   if (userId && apiKey) {
