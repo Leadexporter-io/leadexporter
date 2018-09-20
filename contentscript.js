@@ -13,7 +13,6 @@ const SERVER_URL = 'http://localhost:10/api';
 const SAVEAS_MODE_LEAD = 'Lead';
 const SAVEAS_MODE_CONTACT = 'Contact';
 const SEARCH_COMPANY_SUBMIT_BUTTON_LABEL = '<i class="fa fa-search"></i>';
-const SUBMIT_BUTTON_LABEL = 'Save To CRM';
 const LINK_CONTACT_BUTTON_LABEL = 'Link to LinkedIn profile';
 const FIELDTYPE_TEXT = 'text';
 const FIELDTYPE_NUMBER = 'number';
@@ -155,15 +154,20 @@ function analyzeRegularLinkedInPageJobs(allJobs){
 function switchSaveAsMode() {
   // let saveAsMode = iFrameDOM.find('input[name=save-as]:checked').val();
   console.log('switch to ' + mode + ' mode');
+  // Close the popup
+
+
   if (mode === SAVEAS_MODE_LEAD) {
     console.log('showing lead');
     iFrameDOM.find("#company-input-contact").css("display", "none");
     iFrameDOM.find("#company-input-lead").css("display", "block");
+    iFrameDOM.find('#search-company-popup').css("display", "none");
   } else {
     console.log('showing contact');
     iFrameDOM.find("#company-input-lead").css("display", "none");
     iFrameDOM.find("#company-input-contact").css("display", "block");
   }
+
 }
 
 /* Handle scenario where page is 'loaded' but not all elements are (due to async loading) */
@@ -208,16 +212,57 @@ function getJobs() {
   console.log('getJobs');
 
   let allJobs;
+  let jobsDetected = false;
   // Collect the jobs from the page
-  if (pageType === PAGETYPE_REGULAR_LINKEDIN) {
+  if (pageType === PAGETYPE_REGULAR_LINKEDIN || pageType === PAGETYPE_SALES_NAVIGATOR) {
     jobs = [];
-    // console.log('checking for jobs on regular linkedIn page');
-    allJobs = $("#experience-section").find(".pv-profile-section__sortable-card-item");
-    jobs = addToUniqueJobs(jobs, analyzeRegularLinkedInPageJobs(allJobs));
-    allJobs = $("#experience-section").find(".pv-profile-section__card-item");
-    jobs = addToUniqueJobs(jobs, analyzeRegularLinkedInPageJobs(allJobs));
-    allJobs = $("#experience-section").find(".pv-entity__position-group-pager");
-    jobs = addToUniqueJobs(jobs, analyzeRegularLinkedInPageJobs(allJobs));
+
+    if (pageType === PAGETYPE_REGULAR_LINKEDIN ) {
+      console.log('checking for jobs on regular linkedIn page');
+      allJobs = $("#experience-section").find(".pv-profile-section__sortable-card-item");
+      jobs = addToUniqueJobs(jobs, analyzeRegularLinkedInPageJobs(allJobs));
+      allJobs = $("#experience-section").find(".pv-profile-section__card-item");
+      jobs = addToUniqueJobs(jobs, analyzeRegularLinkedInPageJobs(allJobs));
+      allJobs = $("#experience-section").find(".pv-entity__position-group-pager");
+      jobs = addToUniqueJobs(jobs, analyzeRegularLinkedInPageJobs(allJobs));
+
+    } else if (pageType === PAGETYPE_SALES_NAVIGATOR) {
+      console.log('checking for jobs on Sales Navigator page');
+      allJobs = $("#profile-experience").find(".profile-position");
+      $.each(allJobs, function(index, job) {
+
+        let datesEmployedElement = $(job).find(".profile-position__dates-employed");
+        let titleElement = $(job).find(".profile-position__title");
+        let companyElement = $(job).find(".profile-position__secondary-title");
+
+        let datesEmployed = '';
+        if (datesEmployedElement) {
+          datesEmployed = datesEmployedElement.text().trim();
+        }
+        console.log('dates:' + datesEmployed + ' isPositionCurrent(datesEmployed):' + isPositionCurrent(datesEmployed));
+        if (isPositionCurrent(datesEmployed)) {
+          if (titleElement) {
+            title = titleElement.text().trim();
+          }
+
+          if (companyElement) {
+            comp = companyElement.text().trim();
+            // Contains hidden 'Company'
+            comp = comp.substring(13, comp.length).trim();
+          }
+
+          let job = {
+            title: title,
+            company: comp,
+          };
+          jobs.push(job);
+        }
+      });
+    }
+
+    if (allJobs.length > 0) {
+      jobsDetected = true;
+    }
 
     // Load jobs in a dropdown
     if (jobsDetected && jobInterval) {
@@ -278,20 +323,22 @@ function getName() {
   let result = {};
 
   if (pageType === PAGETYPE_SALES_NAVIGATOR ) {
-    if (data) {
-      result.name = data.fullName;
-      result.firstName = data.firstName;
-      result.lastName = data.lastName;
-    } else {
-      console.log('getName: data not initialised');
+    let nameElement = document.querySelector('.profile-topcard-person-entity__name');
+    if (nameElement) {
+      result.name = nameElement.innerHTML.trim();
+      let nameSplit = splitName(result.name);
+      result.firstName = nameSplit.firstName;
+      result.lastName = nameSplit.lastName;
     }
   }
   if (pageType === PAGETYPE_REGULAR_LINKEDIN) {
-    nameElement = document.querySelector('.pv-top-card-section__name');
-    result.name = nameElement.innerHTML.trim();
-    let nameSplit = splitName(result.name);
-    result.firstName = nameSplit.firstName;
-    result.lastName = nameSplit.lastName;
+    let nameElement = document.querySelector('.pv-top-card-section__name');
+    if (nameElement) {
+      result.name = nameElement.innerHTML.trim();
+      let nameSplit = splitName(result.name);
+      result.firstName = nameSplit.firstName;
+      result.lastName = nameSplit.lastName;
+    }
   }
   if (pageType === PAGETYPE_RECRUITER) {
     if (data) {
@@ -327,21 +374,36 @@ function getLinkedInFromUrl(url) {
     }
     return linkedIn;
   }
+
 }
+
 
 // Gets the LinkedIn address
 function getLinkedIn(url) {
   let linkedIn;
+
   if (pageType === PAGETYPE_SALES_NAVIGATOR ) {
-    if (data) {
-      linkedIn = data.flagshipProfileUrl;
-    } else {
-      console.log('getLinkedIn: data not initialised');
-    }
+    console.log('get linkedIn for Sales Navigator');
+
+    // now we trigger the LinkedIn default onclick
+    document.querySelector('.copy-linkedin').click();
+
+    // remove ugly popup that shows that we've copied that url
+    setTimeout(function(){
+      document.querySelector('artdeco-toasts').style.display = 'none';
+    }, 50);
+
+    // Get the linkedIn address which has been written to this hidden element
+    linkedIn = document.querySelector('#linkedin-paste').innerText;
+    console.log('linkedIn is ' + linkedIn);
+
+    return linkedIn;
   }
+
   if (pageType === PAGETYPE_REGULAR_LINKEDIN) {
     linkedIn = getLinkedInFromUrl(url);
   }
+
   if (pageType === PAGETYPE_RECRUITER) {
     linkedIn = data.publicLink;
   }
@@ -571,8 +633,8 @@ function fillForm() {
   console.log('pageType: ' + pageType);
 
 
-  if (pageType === PAGETYPE_SALES_NAVIGATOR || pageType === PAGETYPE_RECRUITER) {
-    console.log('Processing Sales Navigator Profile');
+  if (pageType === PAGETYPE_RECRUITER) {
+    console.log('Processing Recruiter Profile');
 
     // name
     name = data.fullName;
@@ -630,45 +692,75 @@ function fillForm() {
     // LinkedIn
     linkedIn = getLinkedIn();
 
-    if (pageType === PAGETYPE_SALES_NAVIGATOR) {
-      // Jobs
-      getJobs();
-    }
-    if (pageType === PAGETYPE_RECRUITER) {
-      // Languages
-      if (data.languages) {
-        for (let l = 0; l < data.languages.length; l++) {
-          const language = data.languages[l];
-          console.log('language.languageName:' + language.languageName);
-          // LanguageName is a free text field in LinkedIn
-          switch (language.languageName) {
-            case 'English':
-            case 'Engels':
-              english = language.proficiency;
-              break;
+    // Languages
+    if (data.languages) {
+      for (let l = 0; l < data.languages.length; l++) {
+        const language = data.languages[l];
+        console.log('language.languageName:' + language.languageName);
+        // LanguageName is a free text field in LinkedIn
+        switch (language.languageName) {
+          case 'English':
+          case 'Engels':
+            english = language.proficiency;
+            break;
 
-            case 'French':
-            case 'Frans':
-              french = language.proficiency;
-              break;
+          case 'French':
+          case 'Frans':
+            french = language.proficiency;
+            break;
 
-            case 'German':
-            case 'Duits':
-              german = language.proficiency;
-              break;
+          case 'German':
+          case 'Duits':
+            german = language.proficiency;
+            break;
 
-            case 'Dutch':
-            case 'Nederlands':
-              dutch = language.proficiency;
-              break;
-          }
+          case 'Dutch':
+          case 'Nederlands':
+            dutch = language.proficiency;
+            break;
         }
       }
-      // Educations
-      getEducations();
-      // Positions
-      getPositions();
     }
+
+    // Educations
+    getEducations();
+
+    // Positions
+    getPositions();
+
+  } else if (pageType === PAGETYPE_SALES_NAVIGATOR) {
+    let nameResult = getName();
+    name = nameResult.fullName;
+    firstName = nameResult.firstName;
+    lastName = nameResult.lastName;
+
+    let locationElement = document.querySelector('.profile-topcard__location-data');
+    location = (locationElement ? $(locationElement).text().trim() : '');
+    let locationSplit = splitLocation(location);
+    city = locationSplit.city;
+    country = locationSplit.country;
+
+    let contactInfoElement = document.querySelector('.profile-topcard__contact-info');
+    if (contactInfoElement) {
+      $(contactInfoElement).find('.mv2').each(function(index, infoLine) {
+        let infoLineHTML = $(infoLine).html();
+        if (infoLineHTML.indexOf('type="mobile-icon"') > -1 || infoLineHTML.indexOf('type="phone-handset-icon"') > -1) {
+          phone = $(infoLine).find('a').text().trim();
+        }
+        if (infoLineHTML.indexOf('type="envelope-icon"') > -1) {
+          email = $(infoLine).find('a').text().trim();
+        }
+        if (infoLineHTML.indexOf('type="link-icon"') > -1) {
+          website = $(infoLine).find('a').text().trim();
+        }
+        if (infoLineHTML.indexOf('type="twitter-icon"') > -1) {
+          twitter = $(infoLine).find('a').text().trim();
+        }
+      });
+    }
+
+    // Jobs
+    jobInterval = setInterval(getJobs, 1000);
 
   } else if (pageType ===  PAGETYPE_REGULAR_LINKEDIN) {
     console.log('processing regular LinkedIn profile');
@@ -855,7 +947,7 @@ function createForm() {
     html += '  </div>';
     html += '  <div id="search-company-popup" class="collapse shadow">';
     html += '    <div class="input-group mb-0" id="search-company-popup-input-row">';
-    html += '      <input type="text" id="search-company-query" class="form-control" placeholder="Company name"/>';
+    html += '      <input type="text" id="search-company-query" class="form-control" placeholder="Company name" ' + (isCompanyRequired ? 'required="required"' : '') + '/>';
     html += '      <span class="input-group-btn">';
     html += '        <button type="button" id="search-company-submit-button" class="btn btn-primary">' + SEARCH_COMPANY_SUBMIT_BUTTON_LABEL + '</button>';
     html += '      </span>';
@@ -886,10 +978,14 @@ function createForm() {
   html += '<br/>';*/
   html += '<div id="submit-success-message" class="alert alert-success"></div>';
   html += '<div id="submit-error-message" class="alert alert-danger"></div>';
-  html += '<button type="submit" id="submit-button" class="btn btn-primary">Save To ' + backendSystemName + '</button>';
+  html += '<button type="submit" id="submit-button" class="btn btn-primary">' + submitButtonLabel() + '</button>';
   html += '</form>';
 
   return html;
+}
+
+function submitButtonLabel() {
+  return 'Save To ' + backendSystemName;
 }
 
 function replateNullWithNA(text) {
@@ -1047,6 +1143,8 @@ function createContactSidebar(contact, contacts, linkedIn, name, profilePictureU
         html += '</li>';
       }
       html += '</ul>';
+      html += '<a class="btn btn-primary" href="!#" id="getlinkedIn">Get LinkedIn profile</a>';
+      html += '<input type="text" id="linkedin-paste"></input>';
       html += '<br/><br/>';
       html += createCreateContactButton(linkedIn, objectSingular, isProfilePage);
       html += '<div id="link-contact-error" class="alert alert-danger" style="display: none"></div>';
@@ -1228,7 +1326,7 @@ function submit() {
 
   $.post(SERVER_URL + '/submit', postData, (result) => {
     console.log(JSON.stringify(result));
-    iFrameDOM.find('#submit-button').html(SUBMIT_BUTTON_LABEL);
+    iFrameDOM.find('#submit-button').html(submitButtonLabel());
     if (result.success) {
       const action = (whoId ? 'updated' : 'created');
       showSuccessMessage('Record successfully ' + action + ': <a href="' + result.link + '" target="_blank">' + result.name + '</a>');
@@ -1663,6 +1761,14 @@ function populateContactSidebar(contact, contacts, linkedIn, name, profilePictur
 
     populateForm();
   });
+  iFrameDOM.find('#getlinkedIn').click((event) => {
+    // Prevent reloading the page
+    event.preventDefault();
+
+    console.log('click');
+
+    console.log(getLinkedIn());
+  });
 }
 
 function populateLoadingSidebar() {
@@ -1754,6 +1860,45 @@ function loadTasks(cb) {
   });
 }
 
+function doContactSearch(linkedIn, name, profilePictureURL, userId, apiKey ) {
+  const postData = { linkedIn,
+                      name,
+                      userId,
+                      apiKey };
+
+  $.post(SERVER_URL + '/contact/search', postData, (result) => {
+    console.log('result: ' + JSON.stringify(result));
+    if (result.success) {
+      const contact = result.contact;
+      const contacts = result.contacts;
+
+      mode = result.mode;
+      edition = result.edition;
+      backendSystemName = result.backendSystemName;
+
+      if (contact) {
+        whoId = (contact ? contact.id : null );
+      }
+
+      populateContactSidebar(contact, contacts, linkedIn, name, profilePictureURL);
+
+      if (whoId) {
+        loadTasks((tasks) => {
+          if (pageType === PAGETYPE_LINKEDIN_MESSAGING) {
+            // Keep checking if the number of messages has changed since new messages could have been sent or just loaded by going further back into the conversation
+            createMessageTaskLinksInterval = setInterval(() => {
+              createMessageTaskLinks(tasks);
+            }, 1000);
+          }
+        });
+      }
+
+    } else {
+      console.log('request failed: ' + result.error);
+    }
+  });
+}
+
 function loadFrameContent(urlHasChanged) {
   jobsDetected = false;
   whoId = null;
@@ -1770,9 +1915,6 @@ function loadFrameContent(urlHasChanged) {
     if (currentURL.indexOf('/sales/people') > -1) {
       // LinkedIn Sales Navigator page
       pageType = PAGETYPE_SALES_NAVIGATOR;
-      $.get('https://www.linkedin.com/sales-api/salesApiProfiles/(profileId:ACwAAAAbLHsB1rOR4ASFbEqmFbepIWgvJiZl25o,authType:NAME_SEARCH,authToken:Fqq2)?decoration=%28entityUrn%2CobjectUrn%2CpictureInfo%2CprofilePictureDisplayImage%2CfirstName%2ClastName%2CfullName%2Cheadline%2CmemberBadges%2Cdegree%2CprofileUnlockInfo%2Clocation%2Cindustry%2CnumOfConnections%2CinmailRestriction%2CsavedLead%2CdefaultPosition%2CcontactInfo%2Csummary%2CcrmStatus%2CpendingInvitation%2Cunlocked%2CrelatedColleagueCompanyId%2CnumOfSharedConnections%2CshowTotalConnectionsPage%2CconnectedTime%2CnoteCount%2CflagshipProfileUrl%2Cpositions*%2Ceducations*%2Ctags*~fs_salesTag%28entityUrn%2Ctype%2Cvalue%29%29',(response) => {
-        console.log('response:' + JSON.stringify(response));
-      });
     } else if (currentURL.indexOf('linkedin.com/in/') > -1){
       // Regular LinkedIn page
       pageType = PAGETYPE_REGULAR_LINKEDIN;
@@ -1790,21 +1932,6 @@ function loadFrameContent(urlHasChanged) {
 
     if (pageType) {
       maximize();
-      if (pageType === PAGETYPE_SALES_NAVIGATOR) {
-        initData();
-        if (data) {
-          if (data.flagshipProfileUrl === profileURL && urlHasChanged) {
-            console.log('we need to check again');
-            location.reload();
-            // setTimeout(function(){ loadFrameContent(); }, 1000);
-            // loadFrameContent()
-          } else {
-            profileURL = data.flagshipProfileUrl;
-          }
-        } else {
-          console.log('data init failed:' + JSON.stringify(data));
-        }
-      }
 
       // Show sidebar with loading content while we're getting all data
       populateLoadingSidebar();
@@ -1823,6 +1950,9 @@ function loadFrameContent(urlHasChanged) {
           let getProfilePictureFromMessagingPageInterval = setInterval(() => {
             console.log('doing interval');
             profilePictureURL = getProfilePictureFromMessagingPage();
+
+            doContactSearch(linkedIn, name, profilePictureURL, userId, apiKey);
+
             // We found an image which is not the LinkedIn provided dummy image
             if (profilePictureURL && profilePictureURL !== 'https://static.licdn.com/sc/h/djzv59yelk5urv2ujlazfyvrk') {
               iFrameDOM.find('#profile-picture').attr('src', profilePictureURL);
@@ -1843,49 +1973,32 @@ function loadFrameContent(urlHasChanged) {
         name = getName().name;
         profilePictureURL = getProfilePictureURL();
         linkedIn = getLinkedIn();
-      } else {
+
+        doContactSearch(linkedIn, name, profilePictureURL, userId, apiKey);
+      } else if (pageType === PAGETYPE_SALES_NAVIGATOR || pageType === PAGETYPE_REGULAR_LINKEDIN) {
+        const finishGettingData = (name) => {
+          profilePictureURL = getProfilePictureURL();
+          linkedIn = getLinkedIn(currentURL);
+          doContactSearch(linkedIn, name, profilePictureURL, userId, apiKey);
+        };
+
+        // If we don't get a result for name yet, try again, may still be loading
         name = getName().name;
-        profilePictureURL = getProfilePictureURL();
-        linkedIn = getLinkedIn(currentURL);
-      }
-
-      const postData = { linkedIn,
-                          name,
-                          userId,
-                          apiKey };
-
-
-      $.post(SERVER_URL + '/contact/search', postData, (result) => {
-        console.log('result: ' + JSON.stringify(result));
-        if (result.success) {
-          const contact = result.contact;
-          const contacts = result.contacts;
-
-          mode = result.mode;
-          edition = result.edition;
-          backendSystemName = result.backendSystemName;
-
-          if (contact) {
-            whoId = (contact ? contact.id : null );
-          }
-
-          populateContactSidebar(contact, contacts, linkedIn, name, profilePictureURL);
-
-          if (whoId) {
-            loadTasks((tasks) => {
-              if (pageType === PAGETYPE_LINKEDIN_MESSAGING) {
-                // Keep checking if the number of messages has changed since new messages could have been sent or just loaded by going further back into the conversation
-                createMessageTaskLinksInterval = setInterval(() => {
-                  createMessageTaskLinks(tasks);
-                }, 1000);
-              }
-            });
-          }
-
+        if (!name) {
+          let nameInterval = setInterval(() => {
+            console.log('checking for name');
+            name = getName().name;
+            console.log('name: ' + name);
+            if (name) {
+              console.log('clearing interval');
+              clearInterval(nameInterval);
+              finishGettingData(name);
+            }
+          }, 200);
         } else {
-          console.log('request failed: ' + result.error);
+          finishGettingData(name);
         }
-      });
+      }
     } else {
       // User visits a page on which we don't want to show the extension, eg. the Notifications page on LinkedIn
       minimize();
@@ -1909,6 +2022,7 @@ function checkURLchange(){
   oldURL = window.location.href;
 }
 
+
 $(document).ready(function(){
   // Capture recruiter profile data as soon as page loads as it is removed later on
   recruiterProfileData = $('code#profile-data').html();
@@ -1930,6 +2044,36 @@ $(document).ready(function(){
         iframe.style.cssText = 'position:fixed;top:0;right:0;display:block;' +
                                'width:' + IFRAME_WIDTH_MAXIMIZED + 'px;height:100%;z-index:1000; border-left: 1px solid #ccc; background-color: white;';
         document.body.appendChild(iframe);
+
+
+        let htmlScript = `const command = document.execCommand;
+
+                          var h = document.createElement("div");
+                          // h.id = 'linkedin-paste-div';
+                          h.style.cssText = 'display:none;';
+                          // var t = document.createTextNode('ok');
+                          h.id = 'linkedin-paste';
+                          // h.appendChild(t);
+
+                          document.body.appendChild(h);
+
+                          document.execCommand = function(method) {
+                            // Check if copy command is used
+                            if (method == 'copy') {
+                              const copied = window.getSelection().toString();
+                              // Check if the text copied is a valid Profile url
+                              if(copied.indexOf('linkedin.com/in/') > -1){
+                                console.log('I copied ' + copied);
+                                document.querySelector('#linkedin-paste').innerText = copied;
+                              }
+                            }
+
+                            // Trigger default function
+                            command(method);
+                          };`;
+        let script = document.createElement('script');
+        script.innerHTML = htmlScript;
+        document.body.appendChild(script);
 
         iFrameDOM = $("iframe#" + frameId).contents();
 

@@ -13,6 +13,8 @@
   "permissions": [
     "storage",
     "activeTab",
+    "clipboardWrite",
+    "clipboardRead",
     "https://ajax.googleapis.com/",
     "https://use.fontawesome.com/",
     "http://*/*",
@@ -20,6 +22,7 @@
   ],
   "content_scripts": [{
       "js": ["js/jquery-3.3.1.min.js", "contentscript.js"],
+      "run_at": "document_start",
       "matches": ["*://*.linkedin.com/*"],
       "exclude_matches":["*://*.linkedin.com/recruiter/smartsearch*"],
       "all_frames": false
