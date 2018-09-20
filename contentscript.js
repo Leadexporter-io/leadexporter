@@ -8,8 +8,8 @@ const EDITION_BUSINESS_DEVELOPER = 'Business Developer';
 const EDITION_RECRUITER = 'Recruiter';
 const IFRAME_WIDTH_MINIMIZED = 50;
 const IFRAME_WIDTH_MAXIMIZED = 470;
-// const SERVER_URL = 'https://app.leadexporter.io/api';
-const SERVER_URL = 'http://localhost:10/api';
+const SERVER_URL = 'https://app.leadexporter.io/api';
+// const SERVER_URL = 'http://localhost:10/api';
 const SAVEAS_MODE_LEAD = 'Lead';
 const SAVEAS_MODE_CONTACT = 'Contact';
 const SEARCH_COMPANY_SUBMIT_BUTTON_LABEL = '<i class="fa fa-search"></i>';
@@ -730,7 +730,7 @@ function fillForm() {
 
   } else if (pageType === PAGETYPE_SALES_NAVIGATOR) {
     let nameResult = getName();
-    name = nameResult.fullName;
+    name = nameResult.name;
     firstName = nameResult.firstName;
     lastName = nameResult.lastName;
 
@@ -758,6 +758,9 @@ function fillForm() {
         }
       });
     }
+
+    // LinkedIn
+    linkedIn = getLinkedIn();
 
     // Jobs
     jobInterval = setInterval(getJobs, 1000);
@@ -1489,6 +1492,10 @@ function createTaskLink(messageGroup, i, taskExists, recordLink) {
     link = '<div id="task-message-' + whoId + '-' + i + '" class="task-message" style="margin-left: 10px;"><a id=\"create-task-' + whoId + '-' + i + '\" data-counter="' + i + '" href=\"!#\">Create task</a></div>';
   }
 
+  // Remove any other existing links
+  $(messageGroup).find('.msg-s-message-group__meta').find('.task-message').each((index, link) => {
+    link.parentNode.removeChild(link);
+  });
   $(messageGroup).find('.msg-s-message-group__meta').html($(messageGroup).find('.msg-s-message-group__meta').html() + link);
   $('#create-task-' + whoId + '-' + i).on('click', function (e) {
     e.preventDefault();
@@ -1498,7 +1505,8 @@ function createTaskLink(messageGroup, i, taskExists, recordLink) {
   });
 }
 
-function createMessageTaskLink(tasks, tasksWithoutSpaces, tempMessage, messageGroup, i) {
+function createMessageTaskLink(tasks, tasksWithoutSpaces, tempMessage, messageGroup, i, addToMessages) {
+  console.log('createMessageTaskLink for ' + i + ' tempMessage:' + tempMessage);
   let taskExists = false;
   let taskLink = '';
   let taskMatchCounter = tasksWithoutSpaces.indexOf(tempMessage.replace(/\s/g,''));
@@ -1512,8 +1520,10 @@ function createMessageTaskLink(tasks, tasksWithoutSpaces, tempMessage, messageGr
     // Create link for last line
     createTaskLink(messageGroup, i, taskExists, taskLink);
 
-    // Save this message
-    MESSAGES.push(tempMessage);
+    if (addToMessages) {
+      // Save this message
+      MESSAGES.push(tempMessage);
+    }
   }
 }
 
@@ -1562,7 +1572,7 @@ function createMessageTaskLinks(tasks) {
           // Add messages together if they are from the same author
           tempMessage += (tempMessage ? '\n' : '') + message;
         } else {
-          createMessageTaskLink(tasks, tasksWithoutSpaces, tempMessage, previousMessageGroup, i);
+          createMessageTaskLink(tasks, tasksWithoutSpaces, tempMessage, previousMessageGroup, i, true);
 
           // Start new message
           tempMessage = message;
@@ -1572,9 +1582,20 @@ function createMessageTaskLinks(tasks) {
 
       // For the last line (needs to be outside of if (message){} logic as last message can be connection request confirmation which is no message)
       if (index === (numberOfMessageItems - 1)) {
-        const messageGroupToShowLinkFor = (message ? messageGroup : previousMessageGroup);
-        createMessageTaskLink(tasks, tasksWithoutSpaces, tempMessage, messageGroupToShowLinkFor, i);
+        if (author) {
+          const messageGroupToShowLinkFor = (message ? messageGroup : previousMessageGroup);
+          console.log('with author: for last message: message:' + message + ' tempMessage:' + tempMessage);
+          createMessageTaskLink(tasks, tasksWithoutSpaces, tempMessage, messageGroupToShowLinkFor, i, true);
+        } else {
+          const lastMessage = MESSAGES[MESSAGES.length - 1] + '\n' + tempMessage;
+          MESSAGES[MESSAGES.length - 1] = lastMessage;
+          const messageGroupToShowLinkFor = (message ? messageGroup : previousMessageGroup);
+          console.log('no author: for last message: message:' + message + ' tempMessage:' + tempMessage);
+          createMessageTaskLink(tasks, tasksWithoutSpaces, lastMessage, previousMessageGroup, i, false);
+        }
       }
+
+      console.log('MESSAGES:' + MESSAGES);
 
       // Store the last messageGroup with the name of the person, since that's where we want to add the link
       if (profileLink.text().trim()) {
@@ -1583,7 +1604,7 @@ function createMessageTaskLinks(tasks) {
 
     });
   } else {
-    console.log('number of conversations checked and the same');
+    // console.log('number of conversations checked and the same');
   }
 }
 
@@ -1994,7 +2015,7 @@ function loadFrameContent(urlHasChanged) {
 }
 
 function checkURLchange(){
-  console.log('check URL change');
+  // console.log('check URL change');
   currentURL = window.location.href;
   if(currentURL != oldURL) {
     // Reset vars
