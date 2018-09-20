@@ -1104,14 +1104,15 @@ function createContactSidebar(contact, contacts, linkedIn, name, profilePictureU
   html += '<img id="profile-picture" src="' + profilePictureURL + '" class="mx-auto d-block"/>';
   html += '<br/>';
   html += '<h2 class="text-center">' + name + '</h2>';
+  html += '<p class="text-center">';
   if (!isProfilePage) {
-    html += '<p class="text-center">';
     html += '<a href="' + linkedIn + '" target="_blank" class="btn btn-light">View LinkedIn Profile</a>';
-    if (contact) {
-      html += '<a href="' + contact.link + '" target="_blank" class="btn btn-light" style="margin-left: 10px;">View in ' + backendSystemName + '</a>';
-    }
-    '</p>';
   }
+  if (contact) {
+    html += '<a href="' + contact.link + '" target="_blank" class="btn btn-light" style="margin-left: 10px;">View in ' + backendSystemName + '</a>';
+  }
+  html += '</p>';
+
   if (contact) {
     html += '<p>';
     html += 'Title: ' + replateNullWithNA(contact.title) + '<br/>';
@@ -1125,7 +1126,7 @@ function createContactSidebar(contact, contacts, linkedIn, name, profilePictureU
   }
   if (contacts) {
     if (contacts.length === 0) {
-      html += '<p>We did not find any ' + objectPlural + ' with the name <b>' + name + '</b>.</p>';
+      html += '<p>We did not find any ' + objectPlural + ' with the name <b>' + name + '</b> in ' + backendSystemName + '.</p>';
       if (pageType === PAGETYPE_LINKEDIN_MESSAGING) {
         html += '<small class="form-text text-muted">Contacts need to be saved in ' + backendSystemName + ' and linked to the LinkedIn profile before messages can be saved related to them.</small>';
       }
@@ -1143,8 +1144,6 @@ function createContactSidebar(contact, contacts, linkedIn, name, profilePictureU
         html += '</li>';
       }
       html += '</ul>';
-      html += '<a class="btn btn-primary" href="!#" id="getlinkedIn">Get LinkedIn profile</a>';
-      html += '<input type="text" id="linkedin-paste"></input>';
       html += '<br/><br/>';
       html += createCreateContactButton(linkedIn, objectSingular, isProfilePage);
       html += '<div id="link-contact-error" class="alert alert-danger" style="display: none"></div>';
@@ -1489,19 +1488,14 @@ function createTaskLink(messageGroup, i, taskExists, recordLink) {
   } else {
     link = '<div id="task-message-' + whoId + '-' + i + '" class="task-message" style="margin-left: 10px;"><a id=\"create-task-' + whoId + '-' + i + '\" data-counter="' + i + '" href=\"!#\">Create task</a></div>';
   }
-  // Add link if it doesn't already exist
-  console.log('length: ' + $('#task-message-' + whoId + '-' + i).length);
-  // if ($('#task-message-' + whoId + '-' + i).length === 0) {
+
   $(messageGroup).find('.msg-s-message-group__meta').html($(messageGroup).find('.msg-s-message-group__meta').html() + link);
   $('#create-task-' + whoId + '-' + i).on('click', function (e) {
     e.preventDefault();
     // Get the counter of the element that's clicked
     const counter = $(this).attr('data-counter');
-    console.log('counter:' + counter + ' message:' + MESSAGES[counter - 1] + ' messages: ' + MESSAGES);
-
     createTask(MESSAGES[counter - 1], counter);
   });
-  // }
 }
 
 function createMessageTaskLink(tasks, tasksWithoutSpaces, tempMessage, messageGroup, i) {
@@ -1561,9 +1555,6 @@ function createMessageTaskLinks(tasks) {
       profileURL = profileLink.prop('href');
       author = profileLink.text().trim();
       message = $(messageGroup).find('.msg-s-event-listitem__body').text().trim();
-      console.log('index:' + index);
-      console.log('numberOfMessageItems:' + numberOfMessageItems);
-      console.log(messageGroup);
 
       if (message) {
         // if no author is printed: belongs to previous author
@@ -1571,7 +1562,6 @@ function createMessageTaskLinks(tasks) {
           // Add messages together if they are from the same author
           tempMessage += (tempMessage ? '\n' : '') + message;
         } else {
-          console.log('createMessageTaskLink 1');
           createMessageTaskLink(tasks, tasksWithoutSpaces, tempMessage, previousMessageGroup, i);
 
           // Start new message
@@ -1582,7 +1572,6 @@ function createMessageTaskLinks(tasks) {
 
       // For the last line (needs to be outside of if (message){} logic as last message can be connection request confirmation which is no message)
       if (index === (numberOfMessageItems - 1)) {
-        console.log('createMessageTaskLink 2');
         const messageGroupToShowLinkFor = (message ? messageGroup : previousMessageGroup);
         createMessageTaskLink(tasks, tasksWithoutSpaces, tempMessage, messageGroupToShowLinkFor, i);
       }
@@ -1761,14 +1750,6 @@ function populateContactSidebar(contact, contacts, linkedIn, name, profilePictur
 
     populateForm();
   });
-  iFrameDOM.find('#getlinkedIn').click((event) => {
-    // Prevent reloading the page
-    event.preventDefault();
-
-    console.log('click');
-
-    console.log(getLinkedIn());
-  });
 }
 
 function populateLoadingSidebar() {
@@ -1861,6 +1842,7 @@ function loadTasks(cb) {
 }
 
 function doContactSearch(linkedIn, name, profilePictureURL, userId, apiKey ) {
+  console.log('doContactSearch for linkedIn:' + linkedIn + ' name:' + name);
   const postData = { linkedIn,
                       name,
                       userId,
@@ -1946,12 +1928,15 @@ function loadFrameContent(urlHasChanged) {
 
         // Because of async loading: keep trying until we found the picture
         profilePictureURL = getProfilePictureFromMessagingPage();
+
+        doContactSearch(linkedIn, name, profilePictureURL, userId, apiKey);
+
         if (!profilePictureURL) {
           let getProfilePictureFromMessagingPageInterval = setInterval(() => {
             console.log('doing interval');
             profilePictureURL = getProfilePictureFromMessagingPage();
 
-            doContactSearch(linkedIn, name, profilePictureURL, userId, apiKey);
+
 
             // We found an image which is not the LinkedIn provided dummy image
             if (profilePictureURL && profilePictureURL !== 'https://static.licdn.com/sc/h/djzv59yelk5urv2ujlazfyvrk') {
@@ -2045,16 +2030,12 @@ $(document).ready(function(){
                                'width:' + IFRAME_WIDTH_MAXIMIZED + 'px;height:100%;z-index:1000; border-left: 1px solid #ccc; background-color: white;';
         document.body.appendChild(iframe);
 
-
+        // Create script to overwrite copy function
         let htmlScript = `const command = document.execCommand;
 
                           var h = document.createElement("div");
-                          // h.id = 'linkedin-paste-div';
                           h.style.cssText = 'display:none;';
-                          // var t = document.createTextNode('ok');
                           h.id = 'linkedin-paste';
-                          // h.appendChild(t);
-
                           document.body.appendChild(h);
 
                           document.execCommand = function(method) {
