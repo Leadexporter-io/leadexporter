@@ -84,7 +84,19 @@ function splitLocation(location) {
 }
 
 function isPositionCurrent(datesEmployed) {
-  return (datesEmployed.indexOf(' – Present') > -1);
+  if (datesEmployed) {
+    datesEmployed = datesEmployed.toLowerCase();
+    const presentTranslations = ['present', 'heden', 'heute', 'actualidad', 'aujourd’hui'];
+    let isCurrent = false;
+    for (let p = 0; p < presentTranslations.length; p++) {
+      if (datesEmployed.indexOf(presentTranslations[p]) > -1) {
+        isCurrent = true;
+      }
+    }
+    return isCurrent;
+  } else {
+    return false;
+  }
 }
 
 function loadJob(title, company) {
@@ -1831,7 +1843,8 @@ function populateTasksInContactSidebar(tasks) {
     if (tasks.length > 0) {
       for (let t = 0; t < tasks.length; t++) {
         html += '<div class="card">';
-        html += ' <div class="card-header"><a href="' + tasks[t].link + '" target="_blank">' + tasks[t].subject + '</a></div>';
+        html += ' <div class="card-header">';
+        html += '  <div class="pull-left"><a href="' + tasks[t].link + '" target="_blank">' + tasks[t].subject + '</a></div><div class="pull-right">' + tasks[t].date + '</div><div class="clearfix"></div></div>';
         html += '  <div class="card-body">';
         html += '    <p class="card-text">' + tasks[t].description + '</p>';
         html += '  </div>';
