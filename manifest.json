@@ -13,8 +13,6 @@
   "permissions": [
     "storage",
     "activeTab",
-    "clipboardWrite",
-    "clipboardRead",
     "https://ajax.googleapis.com/",
     "https://use.fontawesome.com/",
     "http://*/*",

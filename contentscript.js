@@ -8,8 +8,8 @@ const EDITION_BUSINESS_DEVELOPER = 'Business Developer';
 const EDITION_RECRUITER = 'Recruiter';
 const IFRAME_WIDTH_MINIMIZED = 50;
 const IFRAME_WIDTH_MAXIMIZED = 470;
-const SERVER_URL = 'https://app.leadexporter.io/api';
-// const SERVER_URL = 'http://localhost:10/api';
+// const SERVER_URL = 'https://app.leadexporter.io/api';
+const SERVER_URL = 'http://localhost:10/api';
 const SAVEAS_MODE_LEAD = 'Lead';
 const SAVEAS_MODE_CONTACT = 'Contact';
 const SEARCH_COMPANY_SUBMIT_BUTTON_LABEL = '<i class="fa fa-search"></i>';
@@ -1474,13 +1474,17 @@ function createTask(message, i) {
   $('#task-message-' + whoId + '-' + i).html('<b>Saving...</b>');
   $.post(SERVER_URL + '/task', postData, (result) => {
     console.log('result from creating task:' + JSON.stringify(result));
-    $('#task-message-' + whoId + '-' + i).html(createTaskSavedLink(result.link));
+    $('#task-message-' + whoId + '-' + i).html(createTaskSavedLink(result.success, result.error, result.link));
     loadTasks();
   });
 }
 
-function createTaskSavedLink(link) {
-  return '<a href="' + link + '" target="_blank" style="color:green">Task saved</a>';
+function createTaskSavedLink(saveSuccessful, error, link) {
+  if (saveSuccessful) {
+    return '<a href="' + link + '" target="_blank" style="color:green">Task saved</a>';
+  } else {
+    return '<div style="color:red">Save failed:' + error + '</div>';
+  }
 }
 
 function createTaskLink(messageGroup, i, taskExists, recordLink) {
@@ -1679,7 +1683,7 @@ function createAuthorizeSidebar() {
   html += '<h2>Authorize</h2>';
   html += '<br/>';
   html += 'Please authorize LeadExporter to connect to your CRM system using the button below.<br/>';
-  html += 'After successful authorization, just refresh this page and you\'ll be good to go.<br/>';
+  html += 'After successful authorization, just refresh this page and you\'ll be good to go.<br/><br/>';
   html += '<a class="btn btn-primary" href="' + SERVER_URL + '/authorize-user?userId=' + userId + '&apiKey=' + apiKey + '" target="_blank">Authorize</a>';
 
   return html;
@@ -1897,7 +1901,10 @@ function doContactSearch(linkedIn, name, profilePictureURL, userId, apiKey ) {
       }
 
     } else {
-      console.log('request failed: ' + result.error);
+      console.log('request failed: ' + result.errorNr + ' ' + result.error);
+      if (result.errorNr === 403) {
+        populateLoginForm();
+      }
     }
   });
 }
