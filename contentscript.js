@@ -1752,8 +1752,10 @@ function getBackgroundImageURLFromElement(pictureElement) {
 
 function createLoadingSidebar() {
   let html = '<br/><br/><br/>';
-  html += '<img id="loading-picture" src="' + loadingImageURL + '" class="mx-auto d-block"/>';
-  html += '<p class="text-center">Just a sec...</p>';
+  html += '<div id="loading-content">';
+  html += '  <img id="loading-picture" src="' + loadingImageURL + '" class="mx-auto d-block"/>';
+  html += '  <p class="text-center">Just a sec...</p>';
+  html += '</div>';
 
   return html;
 }
@@ -1917,9 +1919,21 @@ function doContactSearch(linkedIn, name, profilePictureURL, userId, apiKey ) {
       console.log('request failed: ' + result.errorNr + ' ' + result.error);
       if (result.errorNr === 403) {
         populateLoginForm();
+      } else {
+        iFrameDOM.find('#loading-content').html('<div class="alert alert-danger">Error: ' + result.error + '</div>');
       }
     }
-  });
+  })
+  // Handle connection failures
+  .fail(function(xhr, status) {
+    let error;
+    if (xhr.status === 0) {
+      error = 'Cannot connect.';
+    } else {
+      error = xhr.statusText;
+    }
+    iFrameDOM.find('#loading-content').html('<div class="alert alert-danger">Error connecting to LeadExporter.io: ' + error + '</div>');
+  })
 }
 
 function loadFrameContent(urlHasChanged) {
