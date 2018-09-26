@@ -1,6 +1,6 @@
 {
   "manifest_version": 2,
-  "version": "0.04",
+  "version": "0.06",
   "name": "LeadExporter.io",
   "short_name": "LeadExporter.io",
   "description": "Extract LinkedIn data straight into your CRM",
@@ -13,8 +13,6 @@
   "permissions": [
     "storage",
     "activeTab",
-    "clipboardWrite",
-    "clipboardRead",
     "https://ajax.googleapis.com/",
     "https://use.fontawesome.com/",
     "http://*/*",

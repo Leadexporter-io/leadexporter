@@ -19,6 +19,8 @@ const FIELDTYPE_NUMBER = 'number';
 const FIELDTYPE_EMAIL = 'email';
 const FIELDTYPE_TEXTAREA = 'text area';
 const FIELDTYPE_PICKLIST = 'picklist';
+const FIELDTYPE_CHECKBOX = 'checkbox';
+const FIELDNAME_CITY = 'city';
 let FIELDS;
 let FIELDNAMES;
 let MESSAGES = [];
@@ -29,6 +31,7 @@ const fontAwesomeCSSURL = chrome.extension.getURL("fonts/font-awesome-4.7.0/css/
 const loadingImageURL = chrome.extension.getURL("img/loading.gif");
 const faceImageURL = chrome.extension.getURL("img/face.png");
 const darkColor = '#004b7c';
+const areas = [' Area', ' en omgeving', ' und Umgebung', 'Région de ', ' y alrededores'];
 var recruiterProfileData;
 
 var apiKey;
@@ -84,7 +87,19 @@ function splitLocation(location) {
 }
 
 function isPositionCurrent(datesEmployed) {
-  return (datesEmployed.indexOf(' – Present') > -1);
+  if (datesEmployed) {
+    datesEmployed = datesEmployed.toLowerCase();
+    const presentTranslations = ['present', 'heden', 'heute', 'actualidad', 'aujourd’hui'];
+    let isCurrent = false;
+    for (let p = 0; p < presentTranslations.length; p++) {
+      if (datesEmployed.indexOf(presentTranslations[p]) > -1) {
+        isCurrent = true;
+      }
+    }
+    return isCurrent;
+  } else {
+    return false;
+  }
 }
 
 function loadJob(title, company) {
@@ -730,7 +745,7 @@ function fillForm() {
 
   } else if (pageType === PAGETYPE_SALES_NAVIGATOR) {
     let nameResult = getName();
-    name = nameResult.fullName;
+    name = nameResult.name;
     firstName = nameResult.firstName;
     lastName = nameResult.lastName;
 
@@ -758,6 +773,9 @@ function fillForm() {
         }
       });
     }
+
+    // LinkedIn
+    linkedIn = getLinkedIn();
 
     // Jobs
     jobInterval = setInterval(getJobs, 1000);
@@ -801,6 +819,8 @@ function fillForm() {
     }
   }
 
+
+
   /* if (!nameElement) {
     nameInterval = setInterval(refillForm, 1000);
   } */
@@ -822,6 +842,7 @@ function fillForm() {
   if (iFrameDOM.find('#city')) {
     iFrameDOM.find('#city').val(city);
   }
+  createRemoveAreaLink();
 
   if (iFrameDOM.find('#country')) {
     iFrameDOM.find('#country').val(country);
@@ -902,6 +923,9 @@ function createForm() {
         html += '<div class="form-group">';
         if (FIELDS[f].type === FIELDTYPE_TEXT || FIELDS[f].type === FIELDTYPE_NUMBER || FIELDS[f].type === FIELDTYPE_EMAIL) {
           html += '  <label for="' + FIELDS[f].name + '">' + FIELDS[f].label + '</label>';
+          if (FIELDS[f].name === FIELDNAME_CITY) {
+            html += '<small class="form-text text-muted pull-right" id="remove-area"></small>';
+          }
           html += '  <input type="' + FIELDS[f].type + '" class="form-control" id="' + FIELDS[f].name + '" name="' + FIELDS[f].name + '" ' + (FIELDS[f].required ? ' required="required"' : '') + '/>';
         }
         if (FIELDS[f].type === FIELDTYPE_TEXTAREA) {
@@ -917,6 +941,12 @@ function createForm() {
             }
           }
           html += '  </select>';
+        }
+        if (FIELDS[f].type === FIELDTYPE_CHECKBOX) {
+          html += ' <div class="form-check">';
+          html += '  <input type="checkbox" class="form-check-input" id="' + FIELDS[f].name + '" name="' + FIELDS[f].name + '"/>';
+          html += '  <label for="' + FIELDS[f].name + '" class="form-check-label">' + FIELDS[f].label + '</label>';
+          html += ' </div>'
         }
         html += '</div>';
       }
@@ -1062,6 +1092,8 @@ function createFrameTemplate() {
   html += '#job-selector { background: #fff; }';
   html += '#back-button { float: left; }'
   html += '#minimize-button { float: right; }';
+  html += '.link-contact { margin-top: 15px; }';
+  html += '.card { margin-top: 5px; }';
   html += '#submit-error-message { display: none; }';
   html += '#submit-success-message { display: none; }';
   html += 'input:valid { border-bottom: 1px solid green; }';
@@ -1116,7 +1148,14 @@ function createContactSidebar(contact, contacts, linkedIn, name, profilePictureU
   if (contact) {
     html += '<p>';
     html += 'Title: ' + replateNullWithNA(contact.title) + '<br/>';
-    html += 'Company: ' + replateNullWithNA(contact.company);
+    html += 'Company: ';
+    if (contact.companyLink) {
+      html += '      <a href="' + contact.companyLink + '" target="_blank">';
+    }
+    html += contact.company;
+    if (contact.companyLink) {
+      html += '      </a>';
+    }
     html += "</p>";
     if (isProfilePage) {
       html += '<button class="btn btn-primary" id="open-form-button">Open Form</button>';
@@ -1136,14 +1175,27 @@ function createContactSidebar(contact, contacts, linkedIn, name, profilePictureU
       html += '</p>';
     } else {
       html += 'We found one or more ' + objectPlural + ' in ' + backendSystemName + ' with this name, which are <b>not linked</b> to this LinkedIn profile:<br/><br/>';
-      html += '<ul class="list-group">';
+
       for (let c = 0; c < contacts.length; c++) {
-        html += '<li class="list-group-item d-flex justify-content-between align-items-center">';
-        html += '<a href="' + contacts[c].link + '" target="_blank">' + contacts[c].name + '</a>';
-        html += '<a class="btn btn-primary link-contact" href="!#" id="' + contacts[c].id + '">' + LINK_CONTACT_BUTTON_LABEL + '</a>';
-        html += '</li>';
+        html += '<div class="card">';
+        html += '  <h6 class="card-header"><a href="' + contacts[c].link + '" target="_blank">' + contacts[c].name + '</a></h6>';
+        html += '  <div class="card-body">';
+        html += '    <p class="card-text">';
+        html += '      Title: ' + contacts[c].title + '<br/>';
+        html += '      Company: ';
+        if (contacts[c].companyLink) {
+          html += '      <a href="' + contacts[c].companyLink + '" target="_blank">';
+        }
+        html += contacts[c].company;
+        if (contacts[c].companyLink) {
+          html += '      </a>';
+        }
+        html += '     <br/>';
+        html += '      <a class="btn btn-primary link-contact" href="!#" id="' + contacts[c].id + '">' + LINK_CONTACT_BUTTON_LABEL + '</a>';
+        html += '    </p>';
+        html += '  </div>';
+        html += '</div>';
       }
-      html += '</ul>';
       html += '<br/><br/>';
       html += createCreateContactButton(linkedIn, objectSingular, isProfilePage);
       html += '<div id="link-contact-error" class="alert alert-danger" style="display: none"></div>';
@@ -1291,7 +1343,7 @@ function submit() {
 
   const saveAs = mode; // getSaveAsMode();
 
-  // Get all elements in the form and put them in an array
+  // Get most input elements in the form and put them in an array
   const valuesArray = [];
   iFrameDOM.find('.form-control').each((index, field) => {
     if (!$(field).hasClass('position-title') &&
@@ -1304,6 +1356,13 @@ function submit() {
       valuesArray.push([$(field).prop('id'), $(field).val()]);
     }
   });
+
+  // Get checkbox elements in the form and put them in an array
+  iFrameDOM.find('.form-check-input').each((index, field) => {
+    console.log('mapping ' + $(field).prop('id') + ' to ' + $(field).is(":checked"));
+    valuesArray.push([$(field).prop('id'), $(field).is(":checked")]);
+  });
+
   valuesArray.push(['company', (saveAs === SAVEAS_MODE_LEAD ? getCompanyName() : iFrameDOM.find('#company-id-contact').val())]);
 
   // Get selected positions
@@ -1471,13 +1530,17 @@ function createTask(message, i) {
   $('#task-message-' + whoId + '-' + i).html('<b>Saving...</b>');
   $.post(SERVER_URL + '/task', postData, (result) => {
     console.log('result from creating task:' + JSON.stringify(result));
-    $('#task-message-' + whoId + '-' + i).html(createTaskSavedLink(result.link));
+    $('#task-message-' + whoId + '-' + i).html(createTaskSavedLink(result.success, result.error, result.link));
     loadTasks();
   });
 }
 
-function createTaskSavedLink(link) {
-  return '<a href="' + link + '" target="_blank" style="color:green">Task saved</a>';
+function createTaskSavedLink(saveSuccessful, error, link) {
+  if (saveSuccessful) {
+    return '<a href="' + link + '" target="_blank" style="color:green">Task saved</a>';
+  } else {
+    return '<div style="color:red">Save failed:' + error + '</div>';
+  }
 }
 
 function createTaskLink(messageGroup, i, taskExists, recordLink) {
@@ -1489,6 +1552,10 @@ function createTaskLink(messageGroup, i, taskExists, recordLink) {
     link = '<div id="task-message-' + whoId + '-' + i + '" class="task-message" style="margin-left: 10px;"><a id=\"create-task-' + whoId + '-' + i + '\" data-counter="' + i + '" href=\"!#\">Create task</a></div>';
   }
 
+  // Remove any other existing links
+  $(messageGroup).find('.msg-s-message-group__meta').find('.task-message').each((index, link) => {
+    link.parentNode.removeChild(link);
+  });
   $(messageGroup).find('.msg-s-message-group__meta').html($(messageGroup).find('.msg-s-message-group__meta').html() + link);
   $('#create-task-' + whoId + '-' + i).on('click', function (e) {
     e.preventDefault();
@@ -1498,7 +1565,8 @@ function createTaskLink(messageGroup, i, taskExists, recordLink) {
   });
 }
 
-function createMessageTaskLink(tasks, tasksWithoutSpaces, tempMessage, messageGroup, i) {
+function createMessageTaskLink(tasks, tasksWithoutSpaces, tempMessage, messageGroup, i, addToMessages) {
+  console.log('createMessageTaskLink for ' + i + ' tempMessage:' + tempMessage);
   let taskExists = false;
   let taskLink = '';
   let taskMatchCounter = tasksWithoutSpaces.indexOf(tempMessage.replace(/\s/g,''));
@@ -1512,8 +1580,10 @@ function createMessageTaskLink(tasks, tasksWithoutSpaces, tempMessage, messageGr
     // Create link for last line
     createTaskLink(messageGroup, i, taskExists, taskLink);
 
-    // Save this message
-    MESSAGES.push(tempMessage);
+    if (addToMessages) {
+      // Save this message
+      MESSAGES.push(tempMessage);
+    }
   }
 }
 
@@ -1562,7 +1632,7 @@ function createMessageTaskLinks(tasks) {
           // Add messages together if they are from the same author
           tempMessage += (tempMessage ? '\n' : '') + message;
         } else {
-          createMessageTaskLink(tasks, tasksWithoutSpaces, tempMessage, previousMessageGroup, i);
+          createMessageTaskLink(tasks, tasksWithoutSpaces, tempMessage, previousMessageGroup, i, true);
 
           // Start new message
           tempMessage = message;
@@ -1572,9 +1642,20 @@ function createMessageTaskLinks(tasks) {
 
       // For the last line (needs to be outside of if (message){} logic as last message can be connection request confirmation which is no message)
       if (index === (numberOfMessageItems - 1)) {
-        const messageGroupToShowLinkFor = (message ? messageGroup : previousMessageGroup);
-        createMessageTaskLink(tasks, tasksWithoutSpaces, tempMessage, messageGroupToShowLinkFor, i);
+        if (author) {
+          const messageGroupToShowLinkFor = (message ? messageGroup : previousMessageGroup);
+          console.log('with author: for last message: message:' + message + ' tempMessage:' + tempMessage);
+          createMessageTaskLink(tasks, tasksWithoutSpaces, tempMessage, messageGroupToShowLinkFor, i, true);
+        } else {
+          const lastMessage = MESSAGES[MESSAGES.length - 1] + '\n' + tempMessage;
+          MESSAGES[MESSAGES.length - 1] = lastMessage;
+          const messageGroupToShowLinkFor = (message ? messageGroup : previousMessageGroup);
+          console.log('no author: for last message: message:' + message + ' tempMessage:' + tempMessage);
+          createMessageTaskLink(tasks, tasksWithoutSpaces, lastMessage, previousMessageGroup, i, false);
+        }
       }
+
+      console.log('MESSAGES:' + MESSAGES);
 
       // Store the last messageGroup with the name of the person, since that's where we want to add the link
       if (profileLink.text().trim()) {
@@ -1583,8 +1664,37 @@ function createMessageTaskLinks(tasks) {
 
     });
   } else {
-    console.log('number of conversations checked and the same');
+    // console.log('number of conversations checked and the same');
   }
+}
+
+function removeArea() {
+  let city = iFrameDOM.find('#city').val();
+  for (let a = 0; a < areas.length; a++) {
+    city = city.replace(areas[a], '');
+  }
+
+  iFrameDOM.find('#city').val(city);
+}
+
+function createRemoveAreaLink() {
+  const city = iFrameDOM.find('#city').val();
+  if (city) {
+    // See if any variation of 'area' is found in the city
+    let matchingArea = '';
+    for (let a = 0; a < areas.length; a++) {
+      if (city.indexOf(areas[a]) > -1) {
+        matchingArea = areas[a];
+        break;
+      }
+    }
+
+    if (matchingArea) {
+      // Create the link
+      iFrameDOM.find('#remove-area').html('<a href="!#">Remove \'' + matchingArea.trim() + '\'</a>');
+    }
+  }
+
 }
 
 function populateForm() {
@@ -1635,6 +1745,11 @@ function populateForm() {
          }
       });
       iFrameDOM.find('#search-company-submit-button').click(searchCompany);
+      iFrameDOM.find('#remove-area').click((event) => {
+        event.preventDefault();
+
+        removeArea();
+      });
     }
   });
 
@@ -1658,7 +1773,7 @@ function createAuthorizeSidebar() {
   html += '<h2>Authorize</h2>';
   html += '<br/>';
   html += 'Please authorize LeadExporter to connect to your CRM system using the button below.<br/>';
-  html += 'After successful authorization, just refresh this page and you\'ll be good to go.<br/>';
+  html += 'After successful authorization, just refresh this page and you\'ll be good to go.<br/><br/>';
   html += '<a class="btn btn-primary" href="' + SERVER_URL + '/authorize-user?userId=' + userId + '&apiKey=' + apiKey + '" target="_blank">Authorize</a>';
 
   return html;
@@ -1715,8 +1830,10 @@ function getBackgroundImageURLFromElement(pictureElement) {
 
 function createLoadingSidebar() {
   let html = '<br/><br/><br/>';
-  html += '<img id="loading-picture" src="' + loadingImageURL + '" class="mx-auto d-block"/>';
-  html += '<p class="text-center">Just a sec...</p>';
+  html += '<div id="loading-content">';
+  html += '  <img id="loading-picture" src="' + loadingImageURL + '" class="mx-auto d-block"/>';
+  html += '  <p class="text-center">Just a sec...</p>';
+  html += '</div>';
 
   return html;
 }
@@ -1806,7 +1923,8 @@ function populateTasksInContactSidebar(tasks) {
     if (tasks.length > 0) {
       for (let t = 0; t < tasks.length; t++) {
         html += '<div class="card">';
-        html += ' <div class="card-header"><a href="' + tasks[t].link + '" target="_blank">' + tasks[t].subject + '</a></div>';
+        html += ' <div class="card-header">';
+        html += '  <div class="pull-left"><a href="' + tasks[t].link + '" target="_blank">' + tasks[t].subject + '</a></div><div class="pull-right">' + tasks[t].date + '</div><div class="clearfix"></div></div>';
         html += '  <div class="card-body">';
         html += '    <p class="card-text">' + tasks[t].description + '</p>';
         html += '  </div>';
@@ -1876,9 +1994,24 @@ function doContactSearch(linkedIn, name, profilePictureURL, userId, apiKey ) {
       }
 
     } else {
-      console.log('request failed: ' + result.error);
+      console.log('request failed: ' + result.errorNr + ' ' + result.error);
+      if (result.errorNr === 403) {
+        populateLoginForm();
+      } else {
+        iFrameDOM.find('#loading-content').html('<div class="alert alert-danger">Error: ' + result.error + '</div>');
+      }
     }
-  });
+  })
+  // Handle connection failures
+  .fail(function(xhr, status) {
+    let error;
+    if (xhr.status === 0) {
+      error = 'Cannot connect.';
+    } else {
+      error = xhr.statusText;
+    }
+    iFrameDOM.find('#loading-content').html('<div class="alert alert-danger">Error connecting to LeadExporter.io: ' + error + '</div>');
+  })
 }
 
 function loadFrameContent(urlHasChanged) {
@@ -1994,7 +2127,7 @@ function loadFrameContent(urlHasChanged) {
 }
 
 function checkURLchange(){
-  console.log('check URL change');
+  // console.log('check URL change');
   currentURL = window.location.href;
   if(currentURL != oldURL) {
     // Reset vars
