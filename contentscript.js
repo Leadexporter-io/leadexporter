@@ -825,8 +825,21 @@ function fillForm() {
     nameInterval = setInterval(refillForm, 1000);
   } */
 
+  // Set default values of fields
+  for (let f = 0; f < FIELDS.length; f++) {
+    if (FIELDS[f].defaultValue) {
+      if (FIELDS[f].type === FIELDTYPE_CHECKBOX) {
+        if (FIELDS[f].defaultValue === 'true') {
+          iFrameDOM.find('#' + FIELDS[f].name).prop('checked', true);
+        }
+      } else {
+        iFrameDOM.find('#' + FIELDS[f].name).val(FIELDS[f].defaultValue);
+      }
+    }
+  }
 
-  // Load the data into the the form
+
+  // Load the LinkedIn data into the the form
   if (iFrameDOM.find('#name')) {
     iFrameDOM.find('#name').text('Full name: ' + name);
   }
