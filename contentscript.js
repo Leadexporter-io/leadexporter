@@ -19,6 +19,8 @@ const FIELDTYPE_NUMBER = 'number';
 const FIELDTYPE_EMAIL = 'email';
 const FIELDTYPE_TEXTAREA = 'text area';
 const FIELDTYPE_PICKLIST = 'picklist';
+const FIELDTYPE_CHECKBOX = 'checkbox';
+const FIELDNAME_CITY = 'city';
 let FIELDS;
 let FIELDNAMES;
 let MESSAGES = [];
@@ -29,6 +31,7 @@ const fontAwesomeCSSURL = chrome.extension.getURL("fonts/font-awesome-4.7.0/css/
 const loadingImageURL = chrome.extension.getURL("img/loading.gif");
 const faceImageURL = chrome.extension.getURL("img/face.png");
 const darkColor = '#004b7c';
+const areas = [' Area', ' en omgeving', ' und Umgebung', 'Région de ', ' y alrededores'];
 var recruiterProfileData;
 
 var apiKey;
@@ -816,6 +819,8 @@ function fillForm() {
     }
   }
 
+
+
   /* if (!nameElement) {
     nameInterval = setInterval(refillForm, 1000);
   } */
@@ -837,6 +842,7 @@ function fillForm() {
   if (iFrameDOM.find('#city')) {
     iFrameDOM.find('#city').val(city);
   }
+  createRemoveAreaLink();
 
   if (iFrameDOM.find('#country')) {
     iFrameDOM.find('#country').val(country);
@@ -917,6 +923,9 @@ function createForm() {
         html += '<div class="form-group">';
         if (FIELDS[f].type === FIELDTYPE_TEXT || FIELDS[f].type === FIELDTYPE_NUMBER || FIELDS[f].type === FIELDTYPE_EMAIL) {
           html += '  <label for="' + FIELDS[f].name + '">' + FIELDS[f].label + '</label>';
+          if (FIELDS[f].name === FIELDNAME_CITY) {
+            html += '<small class="form-text text-muted pull-right" id="remove-area"></small>';
+          }
           html += '  <input type="' + FIELDS[f].type + '" class="form-control" id="' + FIELDS[f].name + '" name="' + FIELDS[f].name + '" ' + (FIELDS[f].required ? ' required="required"' : '') + '/>';
         }
         if (FIELDS[f].type === FIELDTYPE_TEXTAREA) {
@@ -932,6 +941,12 @@ function createForm() {
             }
           }
           html += '  </select>';
+        }
+        if (FIELDS[f].type === FIELDTYPE_CHECKBOX) {
+          html += ' <div class="form-check">';
+          html += '  <input type="checkbox" class="form-check-input" id="' + FIELDS[f].name + '" name="' + FIELDS[f].name + '"/>';
+          html += '  <label for="' + FIELDS[f].name + '" class="form-check-label">' + FIELDS[f].label + '</label>';
+          html += ' </div>'
         }
         html += '</div>';
       }
@@ -1306,7 +1321,7 @@ function submit() {
 
   const saveAs = mode; // getSaveAsMode();
 
-  // Get all elements in the form and put them in an array
+  // Get most input elements in the form and put them in an array
   const valuesArray = [];
   iFrameDOM.find('.form-control').each((index, field) => {
     if (!$(field).hasClass('position-title') &&
@@ -1319,6 +1334,13 @@ function submit() {
       valuesArray.push([$(field).prop('id'), $(field).val()]);
     }
   });
+
+  // Get checkbox elements in the form and put them in an array
+  iFrameDOM.find('.form-check-input').each((index, field) => {
+    console.log('mapping ' + $(field).prop('id') + ' to ' + $(field).is(":checked"));
+    valuesArray.push([$(field).prop('id'), $(field).is(":checked")]);
+  });
+
   valuesArray.push(['company', (saveAs === SAVEAS_MODE_LEAD ? getCompanyName() : iFrameDOM.find('#company-id-contact').val())]);
 
   // Get selected positions
@@ -1624,6 +1646,38 @@ function createMessageTaskLinks(tasks) {
   }
 }
 
+function removeArea() {
+  console.log('removeArea');
+  let city = iFrameDOM.find('#city').val();
+  for (let a = 0; a < areas.length; a++) {
+    city = city.replace(areas[a], '');
+  }
+
+  iFrameDOM.find('#city').val(city);
+}
+
+function createRemoveAreaLink() {
+  const city = iFrameDOM.find('#city').val();
+  console.log(iFrameDOM.find('#city'));
+  console.log('city:' + city);
+  if (city) {
+    // See if any variation of 'area' is found in the city
+    let matchingArea = '';
+    for (let a = 0; a < areas.length; a++) {
+      console.log('city:' + city + ' city.indexOf(areas[a]):' + areas[a] + city.indexOf(areas[a]));
+      if (city.indexOf(areas[a]) > -1) {
+        matchingArea = areas[a];
+        break;
+      }
+    }
+
+    if (matchingArea) {
+      iFrameDOM.find('#remove-area').html('<a href="!#">Remove \'' + matchingArea.trim() + '\'</a>');
+    }
+  }
+
+}
+
 function populateForm() {
   console.log('populateForm');
   // NO NEED TO EXECUTE THIS BEFORE THE FORM IS LOADED?
@@ -1672,6 +1726,11 @@ function populateForm() {
          }
       });
       iFrameDOM.find('#search-company-submit-button').click(searchCompany);
+      iFrameDOM.find('#remove-area').click((event) => {
+        event.preventDefault();
+
+        removeArea();
+      });
     }
   });
 
