@@ -949,6 +949,8 @@ function createForm() {
           html += '  <label for="' + FIELDS[f].name + '">' + FIELDS[f].label + '</label>';
           html += '  <select class="form-control" id="' + FIELDS[f].name + '" name="' + FIELDS[f].name + '" ' + (FIELDS[f].required ? ' required="required"' : '') + '>';
           if (FIELDS[f].picklistValues) {
+            // Empty option
+            html += '  <option value=""></option>';
             for (let v = 0; v < FIELDS[f].picklistValues.length; v++) {
               html += '  <option value="' + FIELDS[f].picklistValues[v].value + '">' + FIELDS[f].picklistValues[v].label + '</option>';
             }
