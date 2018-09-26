@@ -1,6 +1,6 @@
 {
   "manifest_version": 2,
-  "version": "0.06",
+  "version": "0.07",
   "name": "LeadExporter.io",
   "short_name": "LeadExporter.io",
   "description": "Extract LinkedIn data straight into your CRM",
