@@ -1092,6 +1092,8 @@ function createFrameTemplate() {
   html += '#job-selector { background: #fff; }';
   html += '#back-button { float: left; }'
   html += '#minimize-button { float: right; }';
+  html += '.link-contact { margin-top: 15px; }';
+  html += '.card { margin-top: 5px; }';
   html += '#submit-error-message { display: none; }';
   html += '#submit-success-message { display: none; }';
   html += 'input:valid { border-bottom: 1px solid green; }';
@@ -1146,7 +1148,14 @@ function createContactSidebar(contact, contacts, linkedIn, name, profilePictureU
   if (contact) {
     html += '<p>';
     html += 'Title: ' + replateNullWithNA(contact.title) + '<br/>';
-    html += 'Company: ' + replateNullWithNA(contact.company);
+    html += 'Company: ';
+    if (contact.companyLink) {
+      html += '      <a href="' + contact.companyLink + '" target="_blank">';
+    }
+    html += contact.company;
+    if (contact.companyLink) {
+      html += '      </a>';
+    }
     html += "</p>";
     if (isProfilePage) {
       html += '<button class="btn btn-primary" id="open-form-button">Open Form</button>';
@@ -1166,14 +1175,27 @@ function createContactSidebar(contact, contacts, linkedIn, name, profilePictureU
       html += '</p>';
     } else {
       html += 'We found one or more ' + objectPlural + ' in ' + backendSystemName + ' with this name, which are <b>not linked</b> to this LinkedIn profile:<br/><br/>';
-      html += '<ul class="list-group">';
+
       for (let c = 0; c < contacts.length; c++) {
-        html += '<li class="list-group-item d-flex justify-content-between align-items-center">';
-        html += '<a href="' + contacts[c].link + '" target="_blank">' + contacts[c].name + '</a>';
-        html += '<a class="btn btn-primary link-contact" href="!#" id="' + contacts[c].id + '">' + LINK_CONTACT_BUTTON_LABEL + '</a>';
-        html += '</li>';
+        html += '<div class="card">';
+        html += '  <h6 class="card-header"><a href="' + contacts[c].link + '" target="_blank">' + contacts[c].name + '</a></h6>';
+        html += '  <div class="card-body">';
+        html += '    <p class="card-text">';
+        html += '      Title: ' + contacts[c].title + '<br/>';
+        html += '      Company: ';
+        if (contacts[c].companyLink) {
+          html += '      <a href="' + contacts[c].companyLink + '" target="_blank">';
+        }
+        html += contacts[c].company;
+        if (contacts[c].companyLink) {
+          html += '      </a>';
+        }
+        html += '     <br/>';
+        html += '      <a class="btn btn-primary link-contact" href="!#" id="' + contacts[c].id + '">' + LINK_CONTACT_BUTTON_LABEL + '</a>';
+        html += '    </p>';
+        html += '  </div>';
+        html += '</div>';
       }
-      html += '</ul>';
       html += '<br/><br/>';
       html += createCreateContactButton(linkedIn, objectSingular, isProfilePage);
       html += '<div id="link-contact-error" class="alert alert-danger" style="display: none"></div>';
@@ -1647,7 +1669,6 @@ function createMessageTaskLinks(tasks) {
 }
 
 function removeArea() {
-  console.log('removeArea');
   let city = iFrameDOM.find('#city').val();
   for (let a = 0; a < areas.length; a++) {
     city = city.replace(areas[a], '');
@@ -1658,13 +1679,10 @@ function removeArea() {
 
 function createRemoveAreaLink() {
   const city = iFrameDOM.find('#city').val();
-  console.log(iFrameDOM.find('#city'));
-  console.log('city:' + city);
   if (city) {
     // See if any variation of 'area' is found in the city
     let matchingArea = '';
     for (let a = 0; a < areas.length; a++) {
-      console.log('city:' + city + ' city.indexOf(areas[a]):' + areas[a] + city.indexOf(areas[a]));
       if (city.indexOf(areas[a]) > -1) {
         matchingArea = areas[a];
         break;
@@ -1672,6 +1690,7 @@ function createRemoveAreaLink() {
     }
 
     if (matchingArea) {
+      // Create the link
       iFrameDOM.find('#remove-area').html('<a href="!#">Remove \'' + matchingArea.trim() + '\'</a>');
     }
   }
