@@ -8,8 +8,8 @@ const EDITION_BUSINESS_DEVELOPER = 'Business Developer';
 const EDITION_RECRUITER = 'Recruiter';
 const IFRAME_WIDTH_MINIMIZED = 50;
 const IFRAME_WIDTH_MAXIMIZED = 470;
-// const SERVER_URL = 'https://app.leadexporter.io/api';
-const SERVER_URL = 'http://localhost:10/api';
+const SERVER_URL = 'https://app.leadexporter.io/api';
+// const SERVER_URL = 'http://localhost:10/api';
 const SAVEAS_MODE_LEAD = 'Lead';
 const SAVEAS_MODE_CONTACT = 'Contact';
 const SEARCH_COMPANY_SUBMIT_BUTTON_LABEL = '<i class="fa fa-search"></i>';
@@ -32,6 +32,7 @@ const loadingImageURL = chrome.extension.getURL("img/loading.gif");
 const faceImageURL = chrome.extension.getURL("img/face.png");
 const darkColor = '#004b7c';
 const areas = [' Area', ' en omgeving', ' und Umgebung', 'Région de ', ' y alrededores'];
+
 var recruiterProfileData;
 
 var apiKey;
@@ -61,6 +62,71 @@ var currentURL;
 var profileURL;
 var jobsDetected = false;
 
+/* Check if a text is a known US State */
+function isUSState(state) {
+  const states = [{ state: "Alabama", abbreviation: "AL" },
+                  { state: "Alaska", abbreviation: "AK" },
+                  { state: "Arkansas", abbreviation: "AR" },
+                  { state: "Arizona", abbreviation: "AZ" },
+                  { state: "California", abbreviation: "CA" },
+                  { state: "Colorado", abbreviation: "CO" },
+                  { state: "Connecticut", abbreviation: "CT" },
+                  { state: "Delaware", abbreviation: "DE" },
+                  { state: "Dist. of Columbia", abbreviation: "DC" },
+                  { state: "Florida", abbreviation: "FL" },
+                  { state: "Georgia", abbreviation: "GA" },
+                  { state: "Hawaii", abbreviation: "HI" },
+                  { state: "Idaho", abbreviation: "ID" },
+                  { state: "Illinois", abbreviation: "IL" },
+                  { state: "Indiana", abbreviation: "IN" },
+                  { state: "Iowa", abbreviation: "IA" },
+                  { state: "Kansas", abbreviation: "KS" },
+                  { state: "Kentucky", abbreviation: "KY" },
+                  { state: "Louisiana", abbreviation: "LA" },
+                  { state: "Maine", abbreviation: "ME" },
+                  { state: "Montana", abbreviation: "MT" },
+                  { state: "Nebraska", abbreviation: "NE" },
+                  { state: "Nevada", abbreviation: "NV" },
+                  { state: "New Hampshire", abbreviation: "NH" },
+                  { state: "New Jersey", abbreviation: "NJ" },
+                  { state: "New Mexico", abbreviation: "NM" },
+                  { state: "New York", abbreviation: "NY" },
+                  { state: "North Carolina", abbreviation: "NC" },
+                  { state: "North Dakota", abbreviation: "ND" },
+                  { state: "Ohio", abbreviation: "OH" },
+                  { state: "Oklahoma", abbreviation: "OK" },
+                  { state: "Oregon", abbreviation: "OR" },
+                  { state: "Maryland", abbreviation: "MD" },
+                  { state: "Massachusetts", abbreviation: "MA" },
+                  { state: "Michigan", abbreviation: "MI" },
+                  { state: "Minnesota", abbreviation: "MN" },
+                  { state: "Mississippi", abbreviation: "MS" },
+                  { state: "Missouri", abbreviation: "MO" },
+                  { state: "Pennsylvania", abbreviation: "PA" },
+                  { state: "Rhode Island", abbreviation: "RI" },
+                  { state: "South Carolina", abbreviation: "SC" },
+                  { state: "South Dakota", abbreviation: "SD" },
+                  { state: "Tennessee", abbreviation: "TN" },
+                  { state: "Texas", abbreviation: "TX" },
+                  { state: "Utah", abbreviation: "UT" },
+                  { state: "Vermont", abbreviation: "VT" },
+                  { state: "Virginia", abbreviation: "VA" },
+                  { state: "Washington", abbreviation: "WA" },
+                  { state: "West Virginia", abbreviation: "WV" },
+                  { state: "Wisconsin", abbreviation: "WI" },
+                  { state: "Wyoming", abbreviation: "WY" }];
+  let isState = false;
+
+  for (let s = 0; s < states.length; s++) {
+    if (states[s].state === state) {
+      isState = true;
+      break;
+    }
+  }
+
+  return isState;
+}
+
 function splitName(name) {
   let nameSplit = name.split(" ");
   let firstName = nameSplit[0];
@@ -72,18 +138,26 @@ function splitName(name) {
 function splitLocation(location) {
   let locationSplit = location.split(", ");
   let country = '';
+  let state = '';
   let city = '';
+
   if (locationSplit.length === 1) {
     country = location;
   } else {
     city = locationSplit[0];
     country = locationSplit[locationSplit.length - 1];
+    if (locationSplit.length > 2) {
+      state = locationSplit[1];
+    }
   }
 
-  // Remove 'area' if it's part of the city
-  // city = city.replace(' Area', '');
+  // For the US, state is shown as country
+  if (isUSState(country)) {
+    state = country;
+    country = 'Unites States';
+  }
 
-  return { city, country };
+  return { city, state, country };
 }
 
 function isPositionCurrent(datesEmployed) {
@@ -624,6 +698,7 @@ function fillForm() {
   let title = '';
   let company = '';
   let city = '';
+  let state = '';
   let country = '';
   let linkedIn = '';
   let phone = '';
@@ -661,6 +736,7 @@ function fillForm() {
     let locationSplit = splitLocation(location);
     city = locationSplit.city;
     country = locationSplit.country;
+    state = locationSplit.state;
 
     // contact info
     if (data.contactInfo) {
@@ -753,6 +829,7 @@ function fillForm() {
     location = (locationElement ? $(locationElement).text().trim() : '');
     let locationSplit = splitLocation(location);
     city = locationSplit.city;
+    state = locationSplit.state;
     country = locationSplit.country;
 
     let contactInfoElement = document.querySelector('.profile-topcard__contact-info');
@@ -794,6 +871,7 @@ function fillForm() {
     location = (locationElement ? locationElement.innerHTML.trim() : '');
     let locationSplit = splitLocation(location);
     city = locationSplit.city;
+    state = locationSplit.state;
     country = locationSplit.country;
 
     // LinkedIn
@@ -856,6 +934,10 @@ function fillForm() {
     iFrameDOM.find('#city').val(city);
   }
   createRemoveAreaLink();
+
+  if (iFrameDOM.find('#state')) {
+    iFrameDOM.find('#state').val(state);
+  }
 
   if (iFrameDOM.find('#country')) {
     iFrameDOM.find('#country').val(country);
@@ -949,6 +1031,8 @@ function createForm() {
           html += '  <label for="' + FIELDS[f].name + '">' + FIELDS[f].label + '</label>';
           html += '  <select class="form-control" id="' + FIELDS[f].name + '" name="' + FIELDS[f].name + '" ' + (FIELDS[f].required ? ' required="required"' : '') + '>';
           if (FIELDS[f].picklistValues) {
+            // Empty option
+            html += '  <option value=""></option>';
             for (let v = 0; v < FIELDS[f].picklistValues.length; v++) {
               html += '  <option value="' + FIELDS[f].picklistValues[v].value + '">' + FIELDS[f].picklistValues[v].label + '</option>';
             }
@@ -1572,8 +1656,10 @@ function createTaskLink(messageGroup, i, taskExists, recordLink) {
   $(messageGroup).find('.msg-s-message-group__meta').html($(messageGroup).find('.msg-s-message-group__meta').html() + link);
   $('#create-task-' + whoId + '-' + i).on('click', function (e) {
     e.preventDefault();
+
     // Get the counter of the element that's clicked
     const counter = $(this).attr('data-counter');
+    console.log('counter is:' + counter);
     createTask(MESSAGES[counter - 1], counter);
   });
 }
@@ -1664,7 +1750,8 @@ function createMessageTaskLinks(tasks) {
           MESSAGES[MESSAGES.length - 1] = lastMessage;
           const messageGroupToShowLinkFor = (message ? messageGroup : previousMessageGroup);
           console.log('no author: for last message: message:' + message + ' tempMessage:' + tempMessage);
-          createMessageTaskLink(tasks, tasksWithoutSpaces, lastMessage, previousMessageGroup, i, false);
+          // Note: the i we pass is the count of the last message in the array, since i itself could be higher if there are multiple rows from same author
+          createMessageTaskLink(tasks, tasksWithoutSpaces, lastMessage, previousMessageGroup, MESSAGES.length, false);
         }
       }
 
