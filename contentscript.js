@@ -31,7 +31,7 @@ const fontAwesomeCSSURL = chrome.extension.getURL("fonts/font-awesome-4.7.0/css/
 const loadingImageURL = chrome.extension.getURL("img/loading.gif");
 const faceImageURL = chrome.extension.getURL("img/face.png");
 const darkColor = '#004b7c';
-const areas = [' Area', ' en omgeving', ' und Umgebung', 'Région de ', ' y alrededores'];
+const AREAS = [' Area', ' en omgeving', ' und Umgebung', 'Région de ', ' y alrededores'];
 
 var recruiterProfileData;
 
@@ -143,6 +143,15 @@ function splitLocation(location) {
 
   if (locationSplit.length === 1) {
     country = location;
+
+    // Check if the country contains 'Area' (or translation), if so: that's the city
+    for (let a = 0; a < AREAS.length; a++) {
+      if (country.indexOf(AREAS[a]) > -1) {
+        city = country;
+        country = '';
+      }
+    }
+
   } else {
     city = locationSplit[0];
     country = locationSplit[locationSplit.length - 1];
@@ -155,6 +164,11 @@ function splitLocation(location) {
   if (isUSState(country)) {
     state = country;
     country = 'Unites States';
+  }
+
+  // If country is 'Other': leave empty
+  if (country === 'Other') {
+    country = '';
   }
 
   return { city, state, country };
@@ -1318,7 +1332,8 @@ function createLoginForm() {
   html += '  <button type="submit" class="btn btn-primary">Log In</button>';
   html += ' </form>';
   html += ' <br/>';
-  html += ' <a href="https://app.leadexporter.io/register" target="_blank">I don\'t have an account yet</a>';
+  html += ' <a href="https://app.leadexporter.io/register" target="_blank">I don\'t have an account yet</a><br/>';
+  html += ' <a href="https://app.leadexporter.io/recover-password" target="_blank">I forgot my password</a>';
 
   return html;
 }
@@ -1701,7 +1716,7 @@ function createMessageTaskLinks(tasks) {
     let profileURL;
     let author;
     let tempMessage = '';
-    let message;
+    let message = '';
     let previousMessageGroup;
     let tasksWithoutSpaces = [];
     MESSAGES = [];
@@ -1770,8 +1785,8 @@ function createMessageTaskLinks(tasks) {
 
 function removeArea() {
   let city = iFrameDOM.find('#city').val();
-  for (let a = 0; a < areas.length; a++) {
-    city = city.replace(areas[a], '');
+  for (let a = 0; a < AREAS.length; a++) {
+    city = city.replace(AREAS[a], '');
   }
 
   iFrameDOM.find('#city').val(city);
@@ -1782,9 +1797,9 @@ function createRemoveAreaLink() {
   if (city) {
     // See if any variation of 'area' is found in the city
     let matchingArea = '';
-    for (let a = 0; a < areas.length; a++) {
-      if (city.indexOf(areas[a]) > -1) {
-        matchingArea = areas[a];
+    for (let a = 0; a < AREAS.length; a++) {
+      if (city.indexOf(AREAS[a]) > -1) {
+        matchingArea = AREAS[a];
         break;
       }
     }
