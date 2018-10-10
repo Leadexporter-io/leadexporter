@@ -212,8 +212,11 @@ function changeJob() {
 
 /* returns array with active jobs from the elements to analyse */
 function analyzeRegularLinkedInPageJobs(allJobs){
+  console.log('allJobs');
+  console.log(allJobs);
   const jobs = [];
   $.each(allJobs, function(index, job) {
+    // Version 1
     let jobDetails = $(job).find(".pv-entity__summary-info");
     $.each(jobDetails, function (index, jobDetail) {
       jobsDetected = true;
@@ -229,6 +232,7 @@ function analyzeRegularLinkedInPageJobs(allJobs){
       }
     });
 
+    // Version 2
     jobDetails = $(job).find(".pv-profile-section__card-item-v2");
     $.each(jobDetails, function (index, jobDetail) {
 
@@ -249,6 +253,25 @@ function analyzeRegularLinkedInPageJobs(allJobs){
           jobs.push(job);
         }
       });
+    });
+
+    // Group version (multiple positions for same company)
+    let company = $(job).find('.pv-entity__company-summary-info').find('h3').text().trim();
+    company = company.substring(14, company.length).trim(); // Skip hidden text 'Company Name'
+    let positionsAtCompany = $(job).find('.pv-entity__position-group-role-item');
+    $.each(positionsAtCompany, function (index, positionAtCompany) {
+      jobsDetected = true;
+      let title = $(positionAtCompany).find('h3').text();
+      title = title.substring(15, title.length).trim(); // Skip hidden text 'Title' and some whitespace
+      let dates = $(positionAtCompany).find('.pv-entity__date-range').text();
+      dates = dates.substring(25, dates.length).trim(); // Skip hidden text 'Dates Employed' and some whitespace
+      if (isPositionCurrent(dates)) {
+        let job = {
+          title,
+          company,
+        };
+        jobs.push(job);
+      }
     });
   });
   return jobs;
