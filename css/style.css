@@ -1,0 +1,76 @@
+body {
+  margin: 0px;
+  right: 0;
+  width: 95vw;
+  height: 100vh;
+  background: white;
+  color: black;
+}
+.btn-primary {
+  background-color: #004b7c;
+}
+#profile-picture {
+  margin-top: 20px;
+  border-radius: 50%;
+  width: 200px;
+  height: 200px;
+}
+#menu {
+  background-color: #004b7c;
+  width: 100%;
+  height: 30px;
+}
+#content {
+  padding-top: 10px;
+  padding-right: 0px;
+  padding-bottom: 10px;
+  padding-left: 10px;
+}
+a.menu-icon-link {
+  color: #fff;
+}
+div.menu-icon {
+  padding-top: 5px;
+}
+div.position {
+  margin-top: 15px;
+  margin-bottom: 35px;
+}
+div.education {
+  margin-top: 15px;
+  margin-bottom: 35px;
+}
+.collapse {
+  display: block;
+  padding: 0px;
+  max-height: 0px;
+  overflow: hidden;
+  transition: max-height 0.5s cubic-bezier(0, 1, 0, 1);
+}
+.collapse.show {
+  padding: 10px;
+  max-height: 99em;
+  transition: max-height 0.5s ease-in-out;
+}
+#logout-button { float: left; }
+#minimize-button { float: right; }
+#job-selector { background: #fff; }
+#back-button { float: left; }'
+#minimize-button { float: right; }
+.link-contact { margin-top: 15px; }
+.card { margin-top: 5px; }
+#submit-error-message { display: none; }
+#submit-success-message { display: none; }
+input:valid { border-bottom: 1px solid green; }
+input:invalid { border-bottom: 1px solid red; }
+#search-company-popup { border-radius: 4px; border: 1px solid #ccc; margin-top: -1px; }
+#search-company-query { border: 1px solid #ccc !important } /* To avoid the query input having a green bar (coming from the 'valid' validation class) */
+
+/* Override Bootstrap styling to make form more compact */
+label {
+  margin-bottom: 0;
+}
+
+.form-control {
+  padding: .1rem .5rem;
+}

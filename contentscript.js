@@ -8,8 +8,8 @@ const EDITION_BUSINESS_DEVELOPER = 'Business Developer';
 const EDITION_RECRUITER = 'Recruiter';
 const IFRAME_WIDTH_MINIMIZED = 50;
 const IFRAME_WIDTH_MAXIMIZED = 470;
-const SERVER_URL = 'https://app.leadexporter.io/api';
-// const SERVER_URL = 'http://localhost:10/api';
+// const SERVER_URL = 'https://app.leadexporter.io/api';
+const SERVER_URL = 'http://localhost:10/api';
 const SAVEAS_MODE_LEAD = 'Lead';
 const SAVEAS_MODE_CONTACT = 'Contact';
 const SEARCH_COMPANY_SUBMIT_BUTTON_LABEL = '<i class="fa fa-search"></i>';
@@ -24,13 +24,13 @@ const FIELDNAME_CITY = 'city';
 let FIELDS;
 let FIELDNAMES;
 let MESSAGES = [];
+const styleCSSURL = chrome.extension.getURL("css/style.css");
 const bootstrapCSSURL = chrome.extension.getURL("css/bootstrap.min.css");
 const bootstrapJSURL = chrome.extension.getURL("js/bootstrap.min.js");
 const popperURL = chrome.extension.getURL("js/popper.min.js");
 const fontAwesomeCSSURL = chrome.extension.getURL("fonts/font-awesome-4.7.0/css/font-awesome.min.css");
 const loadingImageURL = chrome.extension.getURL("img/loading.gif");
 const faceImageURL = chrome.extension.getURL("img/face.png");
-const darkColor = '#004b7c';
 const AREAS = [' Area', ' en omgeving', ' und Umgebung', 'Région de ', ' y alrededores'];
 
 var recruiterProfileData;
@@ -41,7 +41,7 @@ let jobInterval;
 let createMessageTaskLinksInterval;
 let whoId;
 var data;
-var mode;
+var defaultMode; // default mode to use
 var edition;
 var backendSystemName;
 var numberOfMessageItems = 0;
@@ -278,38 +278,21 @@ function analyzeRegularLinkedInPageJobs(allJobs){
 }
 
 function switchSaveAsMode() {
-  // let saveAsMode = iFrameDOM.find('input[name=save-as]:checked').val();
-  console.log('switch to ' + mode + ' mode');
-  // Close the popup
+  let saveAsMode = iFrameDOM.find('input[name=save-as]:checked').val();
+  console.log('switch to ' + saveAsMode + ' mode');
 
-
-  if (mode === SAVEAS_MODE_LEAD) {
+  if (saveAsMode === SAVEAS_MODE_LEAD) {
     console.log('showing lead');
-    iFrameDOM.find("#company-input-contact").css("display", "none");
-    iFrameDOM.find("#company-input-lead").css("display", "block");
-    iFrameDOM.find('#search-company-popup').css("display", "none");
+    iFrameDOM.find('#company-input-contact').css('display', 'none');
+    iFrameDOM.find('#company-input-lead').css('display', 'block');
+    iFrameDOM.find('#search-company-popup').css('display', 'none');
   } else {
     console.log('showing contact');
-    iFrameDOM.find("#company-input-lead").css("display", "none");
-    iFrameDOM.find("#company-input-contact").css("display", "block");
+    iFrameDOM.find('#company-input-lead').css('display', 'none');
+    iFrameDOM.find('#company-input-contact').css('display', 'block');
+    iFrameDOM.find('#search-company-popup').css('display', 'block');
   }
-
 }
-
-/* Handle scenario where page is 'loaded' but not all elements are (due to async loading) */
-/* function refillForm() {
-  console.log('doing refillForm' + new Date());
-  console.log('nameElementExists:' + nameElementExists);
-  const salesNavigatorNameElement = document.querySelector('.profile-topcard-person-entity__name');
-  const linkedInNameElement = document.querySelector('.pv-top-card-section__name');
-  console.log('salesNavigatorNameElement:' + salesNavigatorNameElement);
-  console.log('linkedInNameElement:' + linkedInNameElement);
-  if (salesNavigatorNameElement || linkedInNameElement) {
-    console.log('match');
-    fillForm();
-    clearInterval(nameInterval);
-  }
-} */
 
 function nameElementLoaded() {
   const salesNavigatorNameElement = document.querySelector('.profile-topcard-person-entity__name');
@@ -1131,15 +1114,15 @@ function createForm() {
     html += '<div id="educations"></div>';
     html += '<br/>';
   }
-  /* html += '<div class="form-check form-check-inline">';
-  html += ' <input class="form-check-input" type="radio" name="save-as" id="save-as-lead" value="lead" checked />';
+  html += '<div class="form-check form-check-inline">';
+  html += ' <input class="form-check-input" type="radio" name="save-as" id="save-as-lead" value="' + SAVEAS_MODE_LEAD + '" />';
   html += ' <label class="form-check-label" for="save-as-lead">Lead</label>';
   html += '</div>';
   html += '<div class="form-check form-check-inline">';
-  html += ' <input class="form-check-input" type="radio" name="save-as" id="save-as-contact" value="contact" />';
+  html += ' <input class="form-check-input" type="radio" name="save-as" id="save-as-contact" value="' + SAVEAS_MODE_CONTACT + '" />';
   html += ' <label class="form-check-label" for="save-as-contact">Contact</label>';
   html += '</div>';
-  html += '<br/>';*/
+  html += '<br/>';
   html += '<div id="submit-success-message" class="alert alert-success"></div>';
   html += '<div id="submit-error-message" class="alert alert-danger"></div>';
   html += '<button type="submit" id="submit-button" class="btn btn-primary">' + submitButtonLabel() + '</button>';
@@ -1161,81 +1144,7 @@ function createFrameTemplate() {
   html += '<head>';
   html += '<link rel="stylesheet" href="' + bootstrapCSSURL + '" />';
   html += '<link rel="stylesheet" href="' + fontAwesomeCSSURL + '" />';
-  html += '<style>';
-  html += 'body {';
-  html += '  margin: 0px;';
-  html += '  right: 0;';
-  html += '  width: 95vw;';
-  html += '  height: 100vh;';
-  html += '  background: white;';
-  html += '  color: black;';
-  html += '}';
-  html += '.btn-primary {';
-  html += '  background-color: ' + darkColor + ';';
-  html += '}';
-  html += '#profile-picture {';
-  html += '  margin-top: 20px;'
-  html += '  border-radius: 50%;';
-  html += '  width: 200px;';
-  html += '  height: 200px;';
-  html += '}';
-  html += '#menu {';
-  html += '  background-color: ' + darkColor + ';';
-  html += '  width: 100%;'
-  html += '  height: 30px;'
-  html += '}';
-  html += '#content {';
-  html += '  padding-top: 10px;';
-  html += '  padding-right: 0px;';
-  html += '  padding-bottom: 10px;';
-  html += '  padding-left: 10px;';
-  // html += '  width: 100%;';
-  // html += '  height: 100%;';
-  html += '}';
-  html += 'a.menu-icon-link {';
-  html += '  color: #fff';
-  html += '}';
-  html += 'div.menu-icon {';
-  html += '  padding-top: 5px;';
-  html += '}';
-  html += 'div.position {';
-  html += '  margin-top: 15px;';
-  html += '  margin-bottom: 35px;';
-  html += '}';
-  html += 'div.education {';
-  html += '  margin-top: 15px;';
-  html += '  margin-bottom: 35px;';
-  html += '}';
-  /* html += '*, ::after, ::before {';
-  html += '  box-sizing: border-box;';
-  html += '}'; */
-  html += '.collapse {';
-  html += '  display: block;';
-  html += '  padding: 0px;';
-  html += '  max-height: 0px;';
-  html += '  overflow: hidden;';
-  html += '  transition: max-height 0.5s cubic-bezier(0, 1, 0, 1);';
-  html += '}';
-  html += '.collapse.show {';
-  html += '  padding: 10px;';
-  html += '  max-height: 99em;';
-  html += '  transition: max-height 0.5s ease-in-out;';
-  html += '}';
-  html += '#logout-button { float: left; }';
-  html += '#minimize-button { float: right; }';
-  html += '#job-selector { background: #fff; }';
-  html += '#back-button { float: left; }'
-  html += '#minimize-button { float: right; }';
-  html += '.link-contact { margin-top: 15px; }';
-  html += '.card { margin-top: 5px; }';
-  html += '#submit-error-message { display: none; }';
-  html += '#submit-success-message { display: none; }';
-  html += 'input:valid { border-bottom: 1px solid green; }';
-  html += 'input:invalid { border-bottom: 1px solid red; }';
-  html += '#search-company-popup { border-radius: 4px; border: 1px solid #ccc; margin-top: -1px;}';
-  html += '#search-company-query { border: 1px solid #ccc !important }'; // To avoid the query input having a green bar (coming from the 'valid' validation class)
-  html += '</style>';
-
+  html += '<link rel="stylesheet" href="' + styleCSSURL + '" />';
   html += '</head>';
   html += '<body>';
   html += '<div id="menu" class="row" style="margin-right: 0px !important; margin-left: 0px !important">';
@@ -1255,8 +1164,8 @@ function createFrameTemplate() {
 
 function createContactSidebar(contact, contacts, linkedIn, name, profilePictureURL) {
   let isProfilePage = (pageType === PAGETYPE_SALES_NAVIGATOR || pageType === PAGETYPE_REGULAR_LINKEDIN || pageType === PAGETYPE_RECRUITER);
-  let objectPlural = (mode === SAVEAS_MODE_LEAD ? 'leads' : 'contacts') ;
-  let objectSingular = (mode === SAVEAS_MODE_LEAD ? 'lead' : 'contact');
+  let objectPlural = (defaultMode === SAVEAS_MODE_LEAD ? 'leads' : 'contacts') ;
+  let objectSingular = (defaultMode === SAVEAS_MODE_LEAD ? 'lead' : 'contact');
 
   const createCreateContactButton = (linkedIn, objectSingular, isProfilePage) => {
     if (isProfilePage) {
@@ -1297,9 +1206,9 @@ function createContactSidebar(contact, contacts, linkedIn, name, profilePictureU
     html += '<br/><br/><h4>Recent Activity</h4>';
     html += '<div id="tasks">Loading...</div>';
   }
-  if (contacts) {
+  if (!contact && contacts) {
     if (contacts.length === 0) {
-      html += '<p>We did not find any ' + objectPlural + ' with the name <b>' + name + '</b> in ' + backendSystemName + '.</p>';
+      html += '<p>We did not find anyone with the name <b>' + name + '</b> in ' + backendSystemName + '.</p>';
       if (pageType === PAGETYPE_LINKEDIN_MESSAGING) {
         html += '<small class="form-text text-muted">Contacts need to be saved in ' + backendSystemName + ' and linked to the LinkedIn profile before messages can be saved related to them.</small>';
       }
@@ -1390,13 +1299,12 @@ function showSuccessMessage(message) {
   iFrameDOM.find('#submit-success-message').css('display', 'block');
 }
 
-/* function getSaveAsMode() {
+function getSaveAsMode() {
   return iFrameDOM.find('input[name=save-as]:checked').val();
-} */
+}
 
 function getCompanyName() {
-  // if (getSaveAsMode() === SAVEAS_MODE_LEAD) {
-  if (mode === SAVEAS_MODE_LEAD) {
+  if (getSaveAsMode() === SAVEAS_MODE_LEAD) {
     return iFrameDOM.find('#company-name-lead').val();
   } else {
     return iFrameDOM.find('#company-name-contact').val();
@@ -1411,12 +1319,11 @@ function linkContact(contactId, linkedIn) {
   valuesArray.push(['linkedIn', linkedIn]);
 
   const postData = { valuesArray,
-                     mode,
+                     mode: getSaveAsMode(),
                      contactId,
                      userId,
                      apiKey };
 
-  // iFrameDOM.find('#submit-button').html('<i class="fa fa-circle-o-notch fa-spin"></i> Saving...');
   iFrameDOM.find('#link-contact-error').css('display', 'none');
   iFrameDOM.find('#link-contact-error').text('');
   $.post(SERVER_URL + '/contact/update', postData, (result) => {
@@ -1476,7 +1383,7 @@ function getSelectionEducations() {
 function submit() {
   console.log('submit');
 
-  const saveAs = mode; // getSaveAsMode();
+  const saveAs = getSaveAsMode();
 
   // Get most input elements in the form and put them in an array
   const valuesArray = [];
@@ -1521,8 +1428,9 @@ function submit() {
     console.log(JSON.stringify(result));
     iFrameDOM.find('#submit-button').html(submitButtonLabel());
     if (result.success) {
-      const action = (whoId ? 'updated' : 'created');
-      showSuccessMessage('Record successfully ' + action + ': <a href="' + result.link + '" target="_blank">' + result.name + '</a>');
+      loadFrameContent();
+      // const action = (whoId ? 'updated' : 'created');
+      // showSuccessMessage('Record successfully ' + action + ': <a href="' + result.link + '" target="_blank">' + result.name + '</a>');
     } else {
       showErrorMessage('Record creation failed: ' + result.error);
     }
@@ -1851,6 +1759,15 @@ function populateForm() {
       // Load the data in the iFrame
       fillForm();
 
+      // Load the right mode
+      if (defaultMode === SAVEAS_MODE_LEAD) {
+        iFrameDOM.find('#save-as-lead').prop('checked', true);
+        iFrameDOM.find('#save-as-contact').prop('checked', false);
+      }
+      if (defaultMode === SAVEAS_MODE_CONTACT) {
+        iFrameDOM.find('#save-as-lead').prop('checked', false);
+        iFrameDOM.find('#save-as-contact').prop('checked', true);
+      }
       switchSaveAsMode();
 
       // Add event listeners
@@ -1859,11 +1776,9 @@ function populateForm() {
       });
       iFrameDOM.find('.position-select').each(function(index, select) {
         $(select).change(changeSelectPosition($(select).attr('data-position-id')));
-        // select.addEventListener("change", );
       });
       iFrameDOM.find('.education-select').each(function(index, select) {
         $(select).change(changeSelectEducation($(select).attr('data-education-id')));
-        // select.addEventListener("change", );
       });
 
 
@@ -2110,7 +2025,7 @@ function doContactSearch(linkedIn, name, profilePictureURL, userId, apiKey ) {
       const contact = result.contact;
       const contacts = result.contacts;
 
-      mode = result.mode;
+      defaultMode = result.mode;
       edition = result.edition;
       backendSystemName = result.backendSystemName;
 
@@ -2206,8 +2121,6 @@ function loadFrameContent(urlHasChanged) {
           let getProfilePictureFromMessagingPageInterval = setInterval(() => {
             console.log('doing interval');
             profilePictureURL = getProfilePictureFromMessagingPage();
-
-
 
             // We found an image which is not the LinkedIn provided dummy image
             if (profilePictureURL && profilePictureURL !== 'https://static.licdn.com/sc/h/djzv59yelk5urv2ujlazfyvrk') {
@@ -2346,7 +2259,7 @@ $(document).ready(function(){
         minimizedDiv.id = 'minimizedDiv';
         minimizedDiv.innerHTML = '<div style="text-align: center; height: 500px; line-height: 500px;"><span id="maximize-button" style="display: inline-block; vertical-align: middle; line-height: normal; writing-mode: vertical-rl; text-orientation: upright; color: #ffffff; cursor: pointer;">LeadExporter.io</span></div>';
         minimizedDiv.style.cssText = 'position:fixed;top:0;right:0;display:block;' +
-                               'width: 40px; height:100%;z-index:100; border-left: 1px solid #fff; background-color: ' + darkColor + ';';
+                               'width: 40px; height:100%;z-index:100; border-left: 1px solid #fff; background-color: #004b7c;';
         document.body.appendChild(minimizedDiv);
         let minimizedDivDOM = $('div#minimizedDiv').contents();
         minimizedDivDOM.find('#maximize-button').click((e) => {
