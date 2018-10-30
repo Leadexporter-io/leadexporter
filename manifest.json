@@ -1,6 +1,6 @@
 {
   "manifest_version": 2,
-  "version": "0.12",
+  "version": "0.14",
   "name": "LeadExporter.io",
   "short_name": "LeadExporter.io",
   "description": "Extract LinkedIn data straight into your CRM",
@@ -28,6 +28,7 @@
   "web_accessible_resources": [
       "js/popper.min.js",
       "js/jquery-3.3.1.min.js",
+      "css/style.css",
       "css/bootstrap.min.css",
       "js/bootstrap.min.js",
       "fonts/font-awesome-4.7.0/css/font-awesome.min.css",
