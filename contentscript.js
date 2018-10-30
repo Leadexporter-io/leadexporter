@@ -8,8 +8,8 @@ const EDITION_BUSINESS_DEVELOPER = 'Business Developer';
 const EDITION_RECRUITER = 'Recruiter';
 const IFRAME_WIDTH_MINIMIZED = 50;
 const IFRAME_WIDTH_MAXIMIZED = 470;
-// const SERVER_URL = 'https://app.leadexporter.io/api';
-const SERVER_URL = 'http://localhost:10/api';
+const SERVER_URL = 'https://app.leadexporter.io/api';
+// const SERVER_URL = 'http://localhost:10/api';
 const SAVEAS_MODE_LEAD = 'Lead';
 const SAVEAS_MODE_CONTACT = 'Contact';
 const SEARCH_COMPANY_SUBMIT_BUTTON_LABEL = '<i class="fa fa-search"></i>';
@@ -52,6 +52,8 @@ let jobs = [];
 let positionsMap = new Map();
 
 let educationsMap = new Map();
+// knows if company is required, necessary to store in global var when switching between modes
+var isCompanyRequired;
 
 // let educations = [];
 var iframe;
@@ -284,12 +286,18 @@ function switchSaveAsMode() {
   if (saveAsMode === SAVEAS_MODE_LEAD) {
     console.log('showing lead');
     iFrameDOM.find('#company-input-contact').css('display', 'none');
+    // if the required property remains the form can't be submitted since the input is hidden
+    iFrameDOM.find('#company-name-contact').removeAttr('required');
     iFrameDOM.find('#company-input-lead').css('display', 'block');
     iFrameDOM.find('#search-company-popup').css('display', 'none');
   } else {
     console.log('showing contact');
     iFrameDOM.find('#company-input-lead').css('display', 'none');
     iFrameDOM.find('#company-input-contact').css('display', 'block');
+    // restore the required attribute
+    if (isCompanyRequired) {
+      iFrameDOM.find('#company-name-contact').prop('required', 'required');
+    }
     iFrameDOM.find('#search-company-popup').css('display', 'block');
   }
 }
@@ -1005,7 +1013,7 @@ function createForm() {
   let html = '';
   html += '<form id="form">';
   let isTitleRequired = false;
-  let isCompanyRequired  = false;
+  isCompanyRequired  = false;
 
   if (FIELDS) {
     let nameShown = false;
@@ -1094,7 +1102,7 @@ function createForm() {
     html += '  </div>';
     html += '  <div id="search-company-popup" class="collapse shadow">';
     html += '    <div class="input-group mb-0" id="search-company-popup-input-row">';
-    html += '      <input type="text" id="search-company-query" class="form-control" placeholder="Company name" ' + (isCompanyRequired ? 'required="required"' : '') + '/>';
+    html += '      <input type="text" id="search-company-query" class="form-control" placeholder="Company name" />';
     html += '      <span class="input-group-btn">';
     html += '        <button type="button" id="search-company-submit-button" class="btn btn-primary">' + SEARCH_COMPANY_SUBMIT_BUTTON_LABEL + '</button>';
     html += '      </span>';
@@ -1114,14 +1122,16 @@ function createForm() {
     html += '<div id="educations"></div>';
     html += '<br/>';
   }
-  html += '<div class="form-check form-check-inline">';
-  html += ' <input class="form-check-input" type="radio" name="save-as" id="save-as-lead" value="' + SAVEAS_MODE_LEAD + '" />';
-  html += ' <label class="form-check-label" for="save-as-lead">Lead</label>';
-  html += '</div>';
-  html += '<div class="form-check form-check-inline">';
-  html += ' <input class="form-check-input" type="radio" name="save-as" id="save-as-contact" value="' + SAVEAS_MODE_CONTACT + '" />';
-  html += ' <label class="form-check-label" for="save-as-contact">Contact</label>';
-  html += '</div>';
+  if (!whoId) {
+    html += '<div class="form-check form-check-inline">';
+    html += ' <input class="form-check-input" type="radio" name="save-as" id="save-as-lead" value="' + SAVEAS_MODE_LEAD + '" />';
+    html += ' <label class="form-check-label" for="save-as-lead">Lead</label>';
+    html += '</div>';
+    html += '<div class="form-check form-check-inline">';
+    html += ' <input class="form-check-input" type="radio" name="save-as" id="save-as-contact" value="' + SAVEAS_MODE_CONTACT + '" />';
+    html += ' <label class="form-check-label" for="save-as-contact">Contact</label>';
+    html += '</div>';
+  }
   html += '<br/>';
   html += '<div id="submit-success-message" class="alert alert-success"></div>';
   html += '<div id="submit-error-message" class="alert alert-danger"></div>';
@@ -1147,8 +1157,13 @@ function createFrameTemplate() {
   html += '<link rel="stylesheet" href="' + styleCSSURL + '" />';
   html += '</head>';
   html += '<body>';
-  html += '<div id="menu" class="row" style="margin-right: 0px !important; margin-left: 0px !important">';
-  html += '  <div class="col-2 menu-icon"><a href="#" class="menu-icon-link"><i class="fa fa-sign-out" alt="log out" aria-hidden="true" id="logout-button" data-toggle="tooltip" title="Log out"></i></a></div>';
+  html += '<div id="menu" class="row">';
+  html += '  <div class="col-2 menu-icon settings-menu">';
+  html += '    <i class="fa fa-cog menu-icon-link dropbtn" alt="log out" aria-hidden="true" id="settings-button" title="Settings"></i>';
+  html += '    <div class="settings-menu-content">';
+  html += '      <a href="#" class="menu-icon-link" id="logout-button"><i class="fa fa-sign-out" alt="log out" aria-hidden="true"  title="Log out"></i>Log out</a>';
+  html += '    </div>';
+  html += '  </div>';
   html += '  <div class="col-6" style="text-align: center;"><span style="color: #ffffff;">LeadExporter.io</span></div>';
   html += '  <div class="col-2 menu-icon"><a href="#" class="menu-icon-link"><i class="fa fa-arrow-left" aria-hidden="true" id="back-button" data-toggle="tooltip" title="Back to previous screen"></i></a></div>';
   html += '  <div class="col-2 menu-icon"><a href="#" class="menu-icon-link"><i class="fa fa-window-minimize" aria-hidden="true" id="minimize-button" data-toggle="tooltip" title="Minimize LeadExporter.io"></i></a></div>';
@@ -1164,7 +1179,6 @@ function createFrameTemplate() {
 
 function createContactSidebar(contact, contacts, linkedIn, name, profilePictureURL) {
   let isProfilePage = (pageType === PAGETYPE_SALES_NAVIGATOR || pageType === PAGETYPE_REGULAR_LINKEDIN || pageType === PAGETYPE_RECRUITER);
-  let objectPlural = (defaultMode === SAVEAS_MODE_LEAD ? 'leads' : 'contacts') ;
   let objectSingular = (defaultMode === SAVEAS_MODE_LEAD ? 'lead' : 'contact');
 
   const createCreateContactButton = (linkedIn, objectSingular, isProfilePage) => {
@@ -1184,7 +1198,7 @@ function createContactSidebar(contact, contacts, linkedIn, name, profilePictureU
     html += '<a href="' + linkedIn + '" target="_blank" class="btn btn-light">View LinkedIn Profile</a>';
   }
   if (contact) {
-    html += '<a href="' + contact.link + '" target="_blank" class="btn btn-light" style="margin-left: 10px;">View in ' + backendSystemName + '</a>';
+    html += '<a href="' + contact.link + '" target="_blank" class="btn btn-light" style="margin-left: 10px;">View ' + contact.type + ' in ' + backendSystemName + '</a>';
   }
   html += '</p>';
 
@@ -1217,7 +1231,7 @@ function createContactSidebar(contact, contacts, linkedIn, name, profilePictureU
       html += createCreateContactButton(linkedIn, objectSingular, isProfilePage);
       html += '</p>';
     } else {
-      html += 'We found one or more ' + objectPlural + ' in ' + backendSystemName + ' with this name, which are <b>not linked</b> to this LinkedIn profile:<br/><br/>';
+      html += 'We found one or more people in ' + backendSystemName + ' with this name, which are <b>not linked</b> to this LinkedIn profile:<br/><br/>';
 
       for (let c = 0; c < contacts.length; c++) {
         html += '<div class="card">';
@@ -1233,8 +1247,9 @@ function createContactSidebar(contact, contacts, linkedIn, name, profilePictureU
         if (contacts[c].companyLink) {
           html += '      </a>';
         }
+        html += '<br/>   Type: ' + contacts[c].type + '<br/>';
         html += '     <br/>';
-        html += '      <a class="btn btn-primary link-contact" href="!#" id="' + contacts[c].id + '">' + LINK_CONTACT_BUTTON_LABEL + '</a>';
+        html += '      <a class="btn btn-primary link-contact" href="!#" id="' + contacts[c].id + '" data-type="' + contacts[c].type + '">' + LINK_CONTACT_BUTTON_LABEL + '</a>';
         html += '    </p>';
         html += '  </div>';
         html += '</div>';
@@ -1278,6 +1293,7 @@ function minimize() {
 
 function maximize() {
   console.log('maximizing extension');
+  console.log($(iframe));
   $(iframe).css('width', IFRAME_WIDTH_MAXIMIZED + 'px');
   $(iframe).css('display', 'block');
 }
@@ -1311,7 +1327,7 @@ function getCompanyName() {
   }
 }
 
-function linkContact(contactId, linkedIn) {
+function linkContact(contactId, linkedIn, type) {
   console.log('linkedContact with contactId ' + contactId + ' and linkedIn:' + linkedIn);
 
   // Get all elements in the form and put them in an array
@@ -1319,7 +1335,7 @@ function linkContact(contactId, linkedIn) {
   valuesArray.push(['linkedIn', linkedIn]);
 
   const postData = { valuesArray,
-                     mode: getSaveAsMode(),
+                     mode: type,
                      contactId,
                      userId,
                      apiKey };
@@ -1471,6 +1487,7 @@ function login() {
 }
 
 function logout() {
+  console.log('logout');
   // Clear values from memory
   setLoginVars(null, null);
   // Load login form
@@ -1907,12 +1924,12 @@ function populateContactSidebar(contact, contacts, linkedIn, name, profilePictur
     // Prevent reloading the page
     event.preventDefault();
 
-    let contactId = event.target.id;
-
+    const contactId = event.target.id;
+    const type = iFrameDOM.find('#' + contactId).attr('data-type');
     // Loading indicator on button
     iFrameDOM.find('#' + contactId).html('<i class=\'fa fa-spinner fa-spin\'></i> Working hard...');
 
-    linkContact(contactId, linkedIn);
+    linkContact(contactId, linkedIn, type);
   });
   iFrameDOM.find('#open-form-button').click((event) => {
     // Prevent reloading the page
