@@ -8,8 +8,8 @@ const EDITION_BUSINESS_DEVELOPER = 'Business Developer';
 const EDITION_RECRUITER = 'Recruiter';
 const IFRAME_WIDTH_MINIMIZED = 50;
 const IFRAME_WIDTH_MAXIMIZED = 470;
-const SERVER_URL = 'https://app.leadexporter.io/api';
-// const SERVER_URL = 'http://localhost:10/api';
+// const SERVER_URL = 'https://app.leadexporter.io/api';
+const SERVER_URL = 'http://localhost:10/api';
 const SAVEAS_MODE_LEAD = 'Lead';
 const SAVEAS_MODE_CONTACT = 'Contact';
 const SEARCH_COMPANY_SUBMIT_BUTTON_LABEL = '<i class="fa fa-search"></i>';
@@ -1133,7 +1133,6 @@ function createForm() {
     html += '</div>';
   }
   html += '<br/>';
-  html += '<div id="submit-success-message" class="alert alert-success"></div>';
   html += '<div id="submit-error-message" class="alert alert-danger"></div>';
   html += '<button type="submit" id="submit-button" class="btn btn-primary">' + submitButtonLabel() + '</button>';
   html += '</form>';
@@ -1299,20 +1298,12 @@ function maximize() {
 }
 
 function hideMessages() {
-  iFrameDOM.find('#submit-success-message').css('display', 'none');
   iFrameDOM.find('#submit-error-message').css('display', 'none');
 }
 
 function showErrorMessage(message) {
   iFrameDOM.find('#submit-error-message').text(message);
   iFrameDOM.find('#submit-error-message').css('display', 'block');
-  iFrameDOM.find('#submit-success-message').css('display', 'none');
-}
-
-function showSuccessMessage(message) {
-  iFrameDOM.find('#submit-success-message').html(message);
-  iFrameDOM.find('#submit-error-message').css('display', 'none');
-  iFrameDOM.find('#submit-success-message').css('display', 'block');
 }
 
 function getSaveAsMode() {
@@ -1351,12 +1342,6 @@ function linkContact(contactId, linkedIn, type) {
       iFrameDOM.find('#link-contact-error').css('display', 'block');
       iFrameDOM.find('#link-contact-error').text('Linking failed: ' + result.error);
     }
-    /* iFrameDOM.find('#submit-button').html(SUBMIT_BUTTON_LABEL);
-    if (result.success) {
-      showSuccessMessage('Record successfully created: <a href="' + result.link + '" target="_blank">' + result.name + '</a>');
-    } else {
-      showErrorMessage('Record creation failed: ' + result.error);
-    } */
   });
 }
 
@@ -1445,8 +1430,6 @@ function submit() {
     iFrameDOM.find('#submit-button').html(submitButtonLabel());
     if (result.success) {
       loadFrameContent();
-      // const action = (whoId ? 'updated' : 'created');
-      // showSuccessMessage('Record successfully ' + action + ': <a href="' + result.link + '" target="_blank">' + result.name + '</a>');
     } else {
       showErrorMessage('Record creation failed: ' + result.error);
     }
