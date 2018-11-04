@@ -22,29 +22,28 @@ const FIELDTYPE_PICKLIST = 'picklist';
 const FIELDTYPE_CHECKBOX = 'checkbox';
 const FIELDNAME_CITY = 'city';
 let FIELDS;
-let FIELDNAMES;
 let MESSAGES = [];
-const styleCSSURL = chrome.extension.getURL("css/style.css");
-const bootstrapCSSURL = chrome.extension.getURL("css/bootstrap.min.css");
-const bootstrapJSURL = chrome.extension.getURL("js/bootstrap.min.js");
-const popperURL = chrome.extension.getURL("js/popper.min.js");
-const fontAwesomeCSSURL = chrome.extension.getURL("fonts/font-awesome-4.7.0/css/font-awesome.min.css");
-const loadingImageURL = chrome.extension.getURL("img/loading.gif");
-const faceImageURL = chrome.extension.getURL("img/face.png");
+const styleCSSURL = chrome.extension.getURL('css/style.css');
+const bootstrapCSSURL = chrome.extension.getURL('css/bootstrap.min.css');
+// const bootstrapJSURL = chrome.extension.getURL("js/bootstrap.min.js");
+// const popperURL = chrome.extension.getURL("js/popper.min.js");
+const fontAwesomeCSSURL = chrome.extension.getURL('fonts/font-awesome-4.7.0/css/font-awesome.min.css');
+const loadingImageURL = chrome.extension.getURL('img/loading.gif');
+const faceImageURL = chrome.extension.getURL('img/face.png');
 const AREAS = [' Area', ' en omgeving', ' und Umgebung', 'Région de ', ' y alrededores'];
 
-var recruiterProfileData;
+let recruiterProfileData;
 
-var apiKey;
-var userId;
+let apiKey;
+let userId;
 let jobInterval;
 let createMessageTaskLinksInterval;
 let whoId;
-var data;
-var defaultMode; // default mode to use
-var edition;
-var backendSystemName;
-var numberOfMessageItems = 0;
+let data;
+let defaultMode; // default mode to use
+let edition;
+let backendSystemName;
+let numberOfMessageItems = 0;
 
 // Positions for Business Developer edition
 let jobs = [];
@@ -53,16 +52,14 @@ let positionsMap = new Map();
 
 let educationsMap = new Map();
 // knows if company is required, necessary to store in global var when switching between modes
-var isCompanyRequired;
+let isCompanyRequired;
 
 // let educations = [];
-var iframe;
-var iFrameDOM;
-var minimizedDiv;
-var oldURL;
-var currentURL;
-var profileURL;
-var jobsDetected = false;
+let iframe;
+let iFrameDOM;
+let minimizedDiv;
+let oldURL;
+let currentURL;
 
 /* Check if a text is a known US State */
 function isUSState(state) {
@@ -221,7 +218,6 @@ function analyzeRegularLinkedInPageJobs(allJobs){
     // Version 1
     let jobDetails = $(job).find(".pv-entity__summary-info");
     $.each(jobDetails, function (index, jobDetail) {
-      jobsDetected = true;
       let jobDetailText = $(jobDetail).text();
       if (isPositionCurrent(jobDetailText)) {
 
@@ -242,7 +238,6 @@ function analyzeRegularLinkedInPageJobs(allJobs){
       company = company.substring(14, company.length).trim(); // Skip hidden text 'Company Name'
       let positionsAtCompany = $(jobDetail).find('.pv-entity__position-group-role-item');
       $.each(positionsAtCompany, function (index, positionAtCompany) {
-        jobsDetected = true;
         let title = $(positionAtCompany).find('h3').text();
         title = title.substring(15, title.length).trim(); // Skip hidden text 'Title' and some whitespace
         let dates = $(positionAtCompany).find('.pv-entity__date-range').text();
@@ -262,7 +257,6 @@ function analyzeRegularLinkedInPageJobs(allJobs){
     company = company.substring(14, company.length).trim(); // Skip hidden text 'Company Name'
     let positionsAtCompany = $(job).find('.pv-entity__position-group-role-item');
     $.each(positionsAtCompany, function (index, positionAtCompany) {
-      jobsDetected = true;
       let title = $(positionAtCompany).find('h3').text();
       title = title.substring(15, title.length).trim(); // Skip hidden text 'Title' and some whitespace
       let dates = $(positionAtCompany).find('.pv-entity__date-range').text();
@@ -1759,7 +1753,6 @@ function populateForm() {
   $.post(SERVER_URL + '/fields', postData, (result) => {
     if (result.success) {
       FIELDS = result.fields;
-      FIELDNAMES = result.fieldNames;
 
       // Create the form
       const formHTML = createForm();
@@ -2081,7 +2074,6 @@ function doContactSearch(linkedIn, name, profilePictureURL, userId, apiKey ) {
 }
 
 function loadFrameContent(urlHasChanged) {
-  jobsDetected = false;
   whoId = null;
   clearInterval(jobInterval);
   clearInterval(createMessageTaskLinksInterval);
