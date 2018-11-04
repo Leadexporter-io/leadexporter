@@ -281,6 +281,10 @@ function analyzeRegularLinkedInPageJobs(allJobs){
 
 function switchSaveAsMode() {
   let saveAsMode = iFrameDOM.find('input[name=save-as]:checked').val();
+  if (!saveAsMode) {
+    // happens when radio input is not loaded, like when an existing contact is edited
+    saveAsMode = defaultMode;
+  }
   console.log('switch to ' + saveAsMode + ' mode');
 
   if (saveAsMode === SAVEAS_MODE_LEAD) {
@@ -1122,7 +1126,7 @@ function createForm() {
     html += '<div id="educations"></div>';
     html += '<br/>';
   }
-  if (!whoId) {
+  if (!whoId) { // you cannot change the type for existing contacts/leads
     html += '<div class="form-check form-check-inline">';
     html += ' <input class="form-check-input" type="radio" name="save-as" id="save-as-lead" value="' + SAVEAS_MODE_LEAD + '" />';
     html += ' <label class="form-check-label" for="save-as-lead">Lead</label>';
@@ -1307,7 +1311,12 @@ function showErrorMessage(message) {
 }
 
 function getSaveAsMode() {
-  return iFrameDOM.find('input[name=save-as]:checked').val();
+  let saveAsMode = iFrameDOM.find('input[name=save-as]:checked').val();
+  // if switch is not rendered
+  if (!saveAsMode) {
+    saveAsMode = defaultMode;
+  }
+  return saveAsMode;
 }
 
 function getCompanyName() {
@@ -2025,7 +2034,11 @@ function doContactSearch(linkedIn, name, profilePictureURL, userId, apiKey ) {
       const contact = result.contact;
       const contacts = result.contacts;
 
-      defaultMode = result.mode;
+      if (contact && contact.type) {
+        defaultMode = contact.type;
+      } else {
+        defaultMode = result.mode;
+      }
       edition = result.edition;
       backendSystemName = result.backendSystemName;
 
