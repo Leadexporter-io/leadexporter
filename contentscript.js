@@ -8,8 +8,8 @@ const EDITION_BUSINESS_DEVELOPER = 'Business Developer';
 const EDITION_RECRUITER = 'Recruiter';
 const IFRAME_WIDTH_MINIMIZED = 50;
 const IFRAME_WIDTH_MAXIMIZED = 470;
-// const SERVER_URL = 'https://app.leadexporter.io/api';
-const SERVER_URL = 'http://localhost:10/api';
+const SERVER_URL = 'https://app.leadexporter.io/api';
+// const SERVER_URL = 'http://localhost:10/api';
 const SAVEAS_MODE_LEAD = 'Lead';
 const SAVEAS_MODE_CONTACT = 'Contact';
 const SEARCH_COMPANY_SUBMIT_BUTTON_LABEL = '<i class="fa fa-search"></i>';
@@ -2089,7 +2089,7 @@ function loadFrameContent(urlHasChanged) {
     if (currentURL.indexOf('/sales/people') > -1) {
       // LinkedIn Sales Navigator page
       pageType = PAGETYPE_SALES_NAVIGATOR;
-    } else if (currentURL.indexOf('linkedin.com/in/') > -1){
+    } else if (currentURL.indexOf('linkedin.com/in/') > -1 && curentURL.indexOf('/detail/recent-activity/') === -1){
       // Regular LinkedIn page
       pageType = PAGETYPE_REGULAR_LINKEDIN;
     } else if (currentURL.indexOf('linkedin.com/recruiter/profile') > -1) {

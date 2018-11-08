@@ -1,6 +1,6 @@
 {
   "manifest_version": 2,
-  "version": "0.14",
+  "version": "0.16",
   "name": "LeadExporter.io",
   "short_name": "LeadExporter.io",
   "description": "Extract LinkedIn data straight into your CRM",
@@ -22,7 +22,7 @@
       "js": ["js/jquery-3.3.1.min.js", "contentscript.js"],
       "run_at": "document_start",
       "matches": ["*://*.linkedin.com/*"],
-      "exclude_matches":["*://*.linkedin.com/recruiter/smartsearch*"],
+      "exclude_matches":["*://*.linkedin.com/recruiter/smartsearch*", "/detail/recent-activity/"],
       "all_frames": false
   }],
   "web_accessible_resources": [
