@@ -2086,10 +2086,11 @@ function loadFrameContent(urlHasChanged) {
     // Determine page type
     //       "matches": ["*://*.linkedin.com/in/*", "*://*.linkedin.com/sales/people/*", "*://*.linkedin.com/messaging/*"],
     pageType = '';
+    console.log('index: currentURL:' + currentURL + ' index:' + currentURL.indexOf('/detail/recent-activity/'));
     if (currentURL.indexOf('/sales/people') > -1) {
       // LinkedIn Sales Navigator page
       pageType = PAGETYPE_SALES_NAVIGATOR;
-    } else if (currentURL.indexOf('linkedin.com/in/') > -1 && curentURL.indexOf('/detail/recent-activity/') === -1){
+    } else if (currentURL.indexOf('linkedin.com/in/') > -1 && currentURL.indexOf('/detail/recent-activity/') === -1){
       // Regular LinkedIn page
       pageType = PAGETYPE_REGULAR_LINKEDIN;
     } else if (currentURL.indexOf('linkedin.com/recruiter/profile') > -1) {
