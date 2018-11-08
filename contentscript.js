@@ -1206,7 +1206,7 @@ function createContactSidebar(contact, contacts, linkedIn, name, profilePictureU
     if (contact.companyLink) {
       html += '      <a href="' + contact.companyLink + '" target="_blank">';
     }
-    html += contact.company;
+    html += replateNullWithNA(contact.company);
     if (contact.companyLink) {
       html += '      </a>';
     }
@@ -1235,17 +1235,18 @@ function createContactSidebar(contact, contacts, linkedIn, name, profilePictureU
         html += '  <h6 class="card-header"><a href="' + contacts[c].link + '" target="_blank">' + contacts[c].name + '</a></h6>';
         html += '  <div class="card-body">';
         html += '    <p class="card-text">';
-        html += '      Title: ' + contacts[c].title + '<br/>';
+        html += '      Title: ' + replateNullWithNA(contacts[c].title) + '<br/>';
         html += '      Company: ';
         if (contacts[c].companyLink) {
           html += '      <a href="' + contacts[c].companyLink + '" target="_blank">';
         }
-        html += contacts[c].company;
+        html += replateNullWithNA(contacts[c].company);
         if (contacts[c].companyLink) {
           html += '      </a>';
         }
-        html += '<br/>   Type: ' + contacts[c].type + '<br/>';
-        html += '     <br/>';
+        html += '      <br/>';
+        html += '      Type: ' + contacts[c].type + '<br/>';
+        html += '      <br/>';
         html += '      <a class="btn btn-primary link-contact" href="!#" id="' + contacts[c].id + '" data-type="' + contacts[c].type + '">' + LINK_CONTACT_BUTTON_LABEL + '</a>';
         html += '    </p>';
         html += '  </div>';
