@@ -8,8 +8,8 @@ const EDITION_BUSINESS_DEVELOPER = 'Business Developer';
 const EDITION_RECRUITER = 'Recruiter';
 const IFRAME_WIDTH_MINIMIZED = 50;
 const IFRAME_WIDTH_MAXIMIZED = 470;
-const SERVER_URL = 'https://app.leadexporter.io/api';
-// const SERVER_URL = 'http://localhost:10/api';
+// const SERVER_URL = 'https://app.leadexporter.io/api';
+const SERVER_URL = 'http://localhost:10/api';
 const SAVEAS_MODE_LEAD = 'Lead';
 const SAVEAS_MODE_CONTACT = 'Contact';
 const SEARCH_COMPANY_SUBMIT_BUTTON_LABEL = '<i class="fa fa-search"></i>';
@@ -62,61 +62,61 @@ let oldURL;
 let currentURL;
 
 /* Check if a text is a known US State */
-function isUSState(state) {
-  const states = [{ state: "Alabama", abbreviation: "AL" },
-                  { state: "Alaska", abbreviation: "AK" },
-                  { state: "Arkansas", abbreviation: "AR" },
-                  { state: "Arizona", abbreviation: "AZ" },
-                  { state: "California", abbreviation: "CA" },
-                  { state: "Colorado", abbreviation: "CO" },
-                  { state: "Connecticut", abbreviation: "CT" },
-                  { state: "Delaware", abbreviation: "DE" },
-                  { state: "Dist. of Columbia", abbreviation: "DC" },
-                  { state: "Florida", abbreviation: "FL" },
-                  { state: "Georgia", abbreviation: "GA" },
-                  { state: "Hawaii", abbreviation: "HI" },
-                  { state: "Idaho", abbreviation: "ID" },
-                  { state: "Illinois", abbreviation: "IL" },
-                  { state: "Indiana", abbreviation: "IN" },
-                  { state: "Iowa", abbreviation: "IA" },
-                  { state: "Kansas", abbreviation: "KS" },
-                  { state: "Kentucky", abbreviation: "KY" },
-                  { state: "Louisiana", abbreviation: "LA" },
-                  { state: "Maine", abbreviation: "ME" },
-                  { state: "Montana", abbreviation: "MT" },
-                  { state: "Nebraska", abbreviation: "NE" },
-                  { state: "Nevada", abbreviation: "NV" },
-                  { state: "New Hampshire", abbreviation: "NH" },
-                  { state: "New Jersey", abbreviation: "NJ" },
-                  { state: "New Mexico", abbreviation: "NM" },
-                  { state: "New York", abbreviation: "NY" },
-                  { state: "North Carolina", abbreviation: "NC" },
-                  { state: "North Dakota", abbreviation: "ND" },
-                  { state: "Ohio", abbreviation: "OH" },
-                  { state: "Oklahoma", abbreviation: "OK" },
-                  { state: "Oregon", abbreviation: "OR" },
-                  { state: "Maryland", abbreviation: "MD" },
-                  { state: "Massachusetts", abbreviation: "MA" },
-                  { state: "Michigan", abbreviation: "MI" },
-                  { state: "Minnesota", abbreviation: "MN" },
-                  { state: "Mississippi", abbreviation: "MS" },
-                  { state: "Missouri", abbreviation: "MO" },
-                  { state: "Pennsylvania", abbreviation: "PA" },
-                  { state: "Rhode Island", abbreviation: "RI" },
-                  { state: "South Carolina", abbreviation: "SC" },
-                  { state: "South Dakota", abbreviation: "SD" },
-                  { state: "Tennessee", abbreviation: "TN" },
-                  { state: "Texas", abbreviation: "TX" },
-                  { state: "Utah", abbreviation: "UT" },
-                  { state: "Vermont", abbreviation: "VT" },
-                  { state: "Virginia", abbreviation: "VA" },
-                  { state: "Washington", abbreviation: "WA" },
-                  { state: "West Virginia", abbreviation: "WV" },
-                  { state: "Wisconsin", abbreviation: "WI" },
-                  { state: "Wyoming", abbreviation: "WY" }];
+const isUSState = (state) => {
+  const states = [{ state: 'Alabama', abbreviation: 'AL' },
+                  { state: 'Alaska', abbreviation: 'AK' },
+                  { state: 'Arkansas', abbreviation: 'AR' },
+                  { state: 'Arizona', abbreviation: 'AZ' },
+                  { state: 'California', abbreviation: 'CA' },
+                  { state: 'Colorado', abbreviation: 'CO' },
+                  { state: 'Connecticut', abbreviation: 'CT' },
+                  { state: 'Delaware', abbreviation: 'DE' },
+                  { state: 'Dist. of Columbia', abbreviation: 'DC' },
+                  { state: 'Florida', abbreviation: 'FL' },
+                  { state: 'Georgia', abbreviation: 'GA' },
+                  { state: 'Hawaii', abbreviation: 'HI' },
+                  { state: 'Idaho', abbreviation: 'ID' },
+                  { state: 'Illinois', abbreviation: 'IL' },
+                  { state: 'Indiana', abbreviation: 'IN' },
+                  { state: 'Iowa', abbreviation: 'IA' },
+                  { state: 'Kansas', abbreviation: 'KS' },
+                  { state: 'Kentucky', abbreviation: 'KY' },
+                  { state: 'Louisiana', abbreviation: 'LA' },
+                  { state: 'Maine', abbreviation: 'ME' },
+                  { state: 'Montana', abbreviation: 'MT' },
+                  { state: 'Nebraska', abbreviation: 'NE' },
+                  { state: 'Nevada', abbreviation: 'NV' },
+                  { state: 'New Hampshire', abbreviation: 'NH' },
+                  { state: 'New Jersey', abbreviation: 'NJ' },
+                  { state: 'New Mexico', abbreviation: 'NM' },
+                  { state: 'New York', abbreviation: 'NY' },
+                  { state: 'North Carolina', abbreviation: 'NC' },
+                  { state: 'North Dakota', abbreviation: 'ND' },
+                  { state: 'Ohio', abbreviation: 'OH' },
+                  { state: 'Oklahoma', abbreviation: 'OK' },
+                  { state: 'Oregon', abbreviation: 'OR' },
+                  { state: 'Maryland', abbreviation: 'MD' },
+                  { state: 'Massachusetts', abbreviation: 'MA' },
+                  { state: 'Michigan', abbreviation: 'MI' },
+                  { state: 'Minnesota', abbreviation: 'MN' },
+                  { state: 'Mississippi', abbreviation: 'MS' },
+                  { state: 'Missouri', abbreviation: 'MO' },
+                  { state: 'Pennsylvania', abbreviation: 'PA' },
+                  { state: 'Rhode Island', abbreviation: 'RI' },
+                  { state: 'South Carolina', abbreviation: 'SC' },
+                  { state: 'South Dakota', abbreviation: 'SD' },
+                  { state: 'Tennessee', abbreviation: 'TN' },
+                  { state: 'Texas', abbreviation: 'TX' },
+                  { state: 'Utah', abbreviation: 'UT' },
+                  { state: 'Vermont', abbreviation: 'VT' },
+                  { state: 'Virginia', abbreviation: 'VA' },
+                  { state: 'Washington', abbreviation: 'WA' },
+                  { state: 'West Virginia', abbreviation: 'WV' },
+                  { state: 'Wisconsin', abbreviation: 'WI' },
+                  { state: 'Wyoming', abbreviation: 'WY' }];
   let isState = false;
 
-  for (let s = 0; s < states.length; s++) {
+  for (let s = 0; s < states.length; s += 1) {
     if (states[s].state === state) {
       isState = true;
       break;
@@ -124,18 +124,18 @@ function isUSState(state) {
   }
 
   return isState;
-}
+};
 
-function splitName(name) {
-  let nameSplit = name.split(" ");
-  let firstName = nameSplit[0];
-  let lastName = name.substring(firstName.length + 1, name.length);
+const splitName = (name) => {
+  const nameSplit = name.split(' ');
+  const firstName = nameSplit[0];
+  const lastName = name.substring(firstName.length + 1, name.length);
 
   return { firstName, lastName };
-}
+};
 
-function splitLocation(location) {
-  let locationSplit = location.split(", ");
+const splitLocation = (location) => {
+  const locationSplit = location.split(', ');
   let country = '';
   let state = '';
   let city = '';
@@ -150,7 +150,6 @@ function splitLocation(location) {
         country = '';
       }
     }
-
   } else {
     city = locationSplit[0];
     country = locationSplit[locationSplit.length - 1];
@@ -171,9 +170,9 @@ function splitLocation(location) {
   }
 
   return { city, state, country };
-}
+};
 
-function isPositionCurrent(datesEmployed) {
+const isPositionCurrent = (datesEmployed) => {
   if (datesEmployed) {
     datesEmployed = datesEmployed.toLowerCase();
     const presentTranslations = ['present', 'heden', 'heute', 'actualidad', 'aujourd’hui'];
@@ -187,42 +186,42 @@ function isPositionCurrent(datesEmployed) {
   } else {
     return false;
   }
-}
+};
 
-function loadJob(title, company) {
+const loadJob = (title, company) => {
   console.log('loadJob for ' + title, company);
 
-  iFrameDOM.find("#title").val(title);
-  iFrameDOM.find("#company-name-lead").val(company);
-  iFrameDOM.find("#search-company-query").val(company);
+  iFrameDOM.find('#title').val(title);
+  iFrameDOM.find('#company-name-lead').val(company);
+  iFrameDOM.find('#search-company-query').val(company);
   // Reset Contact company name and id fields
-  iFrameDOM.find("#company-name-contact").val(null);
-  iFrameDOM.find("#company-id-contact").val(null);
-}
+  iFrameDOM.find('#company-name-contact').val(null);
+  iFrameDOM.find('#company-id-contact').val(null);
+};
 
-function changeJob() {
-  let jobNumber = iFrameDOM.find('#job-selector').val();
+const changeJob = () => {
+  const jobNumber = iFrameDOM.find('#job-selector').val();
   if (jobNumber) {
     loadJob(jobs[jobNumber].title, jobs[jobNumber].company);
   } else {
     loadJob('', '');
   }
-}
+};
 
 /* returns array with active jobs from the elements to analyse */
-function analyzeRegularLinkedInPageJobs(allJobs){
+const analyzeRegularLinkedInPageJobs = (allJobs) => {
   console.log('allJobs');
   console.log(allJobs);
   const jobs = [];
-  $.each(allJobs, function(index, job) {
+  $.each(allJobs, (index, job) => {
     // Version 1
-    let jobDetails = $(job).find(".pv-entity__summary-info");
-    $.each(jobDetails, function (index, jobDetail) {
-      let jobDetailText = $(jobDetail).text();
+    let jobDetails = $(job).find('.pv-entity__summary-info');
+    $.each(jobDetails, (index, jobDetail) => {
+      const jobDetailText = $(jobDetail).text();
       if (isPositionCurrent(jobDetailText)) {
 
-        let jobDetailTextSplit = jobDetailText.split("\n");
-        let job = {
+        const jobDetailTextSplit = jobDetailText.split('\n');
+        const job = {
           title: (jobDetailTextSplit.length > 1 ? jobDetailTextSplit[1].trim() : ''),
           company: (jobDetailTextSplit.length > 5 ? jobDetailTextSplit[5].trim() : ''),
         };
@@ -231,13 +230,13 @@ function analyzeRegularLinkedInPageJobs(allJobs){
     });
 
     // Version 2
-    jobDetails = $(job).find(".pv-profile-section__card-item-v2");
-    $.each(jobDetails, function (index, jobDetail) {
+    jobDetails = $(job).find('.pv-profile-section__card-item-v2');
+    $.each(jobDetails, (index, jobDetail) => {
 
       let company = $(jobDetail).find('.pv-entity__company-summary-info').find('h3').text().trim();
       company = company.substring(14, company.length).trim(); // Skip hidden text 'Company Name'
-      let positionsAtCompany = $(jobDetail).find('.pv-entity__position-group-role-item');
-      $.each(positionsAtCompany, function (index, positionAtCompany) {
+      const positionsAtCompany = $(jobDetail).find('.pv-entity__position-group-role-item');
+      $.each(positionsAtCompany, (index, positionAtCompany) => {
         let title = $(positionAtCompany).find('h3').text();
         title = title.substring(15, title.length).trim(); // Skip hidden text 'Title' and some whitespace
         let dates = $(positionAtCompany).find('.pv-entity__date-range').text();
@@ -255,8 +254,8 @@ function analyzeRegularLinkedInPageJobs(allJobs){
     // Group version (multiple positions for same company)
     let company = $(job).find('.pv-entity__company-summary-info').find('h3').text().trim();
     company = company.substring(14, company.length).trim(); // Skip hidden text 'Company Name'
-    let positionsAtCompany = $(job).find('.pv-entity__position-group-role-item');
-    $.each(positionsAtCompany, function (index, positionAtCompany) {
+    const positionsAtCompany = $(job).find('.pv-entity__position-group-role-item');
+    $.each(positionsAtCompany, (index, positionAtCompany) => {
       let title = $(positionAtCompany).find('h3').text();
       title = title.substring(15, title.length).trim(); // Skip hidden text 'Title' and some whitespace
       let dates = $(positionAtCompany).find('.pv-entity__date-range').text();
@@ -271,9 +270,9 @@ function analyzeRegularLinkedInPageJobs(allJobs){
     });
   });
   return jobs;
-}
+};
 
-function switchSaveAsMode() {
+const switchSaveAsMode = () => {
   let saveAsMode = iFrameDOM.find('input[name=save-as]:checked').val();
   if (!saveAsMode) {
     // happens when radio input is not loaded, like when an existing contact is edited
@@ -298,21 +297,23 @@ function switchSaveAsMode() {
     }
     iFrameDOM.find('#search-company-popup').css('display', 'block');
   }
-}
+};
 
-function nameElementLoaded() {
+/*
+const nameElementLoaded = () => {
   const salesNavigatorNameElement = document.querySelector('.profile-topcard-person-entity__name');
   const linkedInNameElement = document.querySelector('.pv-top-card-section__name');
   return (salesNavigatorNameElement || linkedInNameElement);
-}
+};
+*/
 
-function addToUniqueJobs(jobs, newJobs) {
-  let jobStrings = new Set();
-  for (let j = 0; j < jobs.length; j++) {
+const addToUniqueJobs = (jobs, newJobs) => {
+  const jobStrings = new Set();
+  for (let j = 0; j < jobs.length; j += 1) {
     jobStrings.add(JSON.stringify(jobs[j]));
   }
 
-  for (let j = 0; j < newJobs.length; j++) {
+  for (let j = 0; j < newJobs.length; j += 1) {
     const newJob = newJobs[j];
     if (!jobStrings.has(JSON.stringify(newJob))) {
       jobStrings.add(JSON.stringify(newJob));
@@ -321,9 +322,9 @@ function addToUniqueJobs(jobs, newJobs) {
   }
 
   return jobs;
-}
+};
 
-function getJobs() {
+const getJobs = () => {
   console.log('getJobs');
 
   let allJobs;
@@ -332,23 +333,23 @@ function getJobs() {
   if (pageType === PAGETYPE_REGULAR_LINKEDIN || pageType === PAGETYPE_SALES_NAVIGATOR) {
     jobs = [];
 
-    if (pageType === PAGETYPE_REGULAR_LINKEDIN ) {
+    if (pageType === PAGETYPE_REGULAR_LINKEDIN) {
       console.log('checking for jobs on regular linkedIn page');
-      allJobs = $("#experience-section").find(".pv-profile-section__sortable-card-item");
+      allJobs = $('#experience-section').find('.pv-profile-section__sortable-card-item');
       jobs = addToUniqueJobs(jobs, analyzeRegularLinkedInPageJobs(allJobs));
-      allJobs = $("#experience-section").find(".pv-profile-section__card-item");
+      allJobs = $('#experience-section').find('.pv-profile-section__card-item');
       jobs = addToUniqueJobs(jobs, analyzeRegularLinkedInPageJobs(allJobs));
-      allJobs = $("#experience-section").find(".pv-entity__position-group-pager");
+      allJobs = $('#experience-section').find('.pv-entity__position-group-pager');
       jobs = addToUniqueJobs(jobs, analyzeRegularLinkedInPageJobs(allJobs));
 
     } else if (pageType === PAGETYPE_SALES_NAVIGATOR) {
       console.log('checking for jobs on Sales Navigator page');
-      allJobs = $("#profile-experience").find(".profile-position");
-      $.each(allJobs, function(index, job) {
+      allJobs = $('#profile-experience').find('.profile-position');
+      $.each(allJobs, (index, job) => {
 
-        let datesEmployedElement = $(job).find(".profile-position__dates-employed");
-        let titleElement = $(job).find(".profile-position__title");
-        let companyElement = $(job).find(".profile-position__secondary-title");
+        const datesEmployedElement = $(job).find('.profile-position__dates-employed');
+        const titleElement = $(job).find('.profile-position__title');
+        const companyElement = $(job).find('.profile-position__secondary-title');
 
         let datesEmployed = '';
         if (datesEmployedElement) {
@@ -404,9 +405,9 @@ function getJobs() {
       console.log('data.positions not initialized');
     }
   }
-}
+};
 
-function createJobsDropdown(jobs) {
+const createJobsDropdown = (jobs) => {
   console.log('createJobsDropdown for ' + JSON.stringify(jobs));
   // Create dropdown code
   let jobsHTML = '<select id="job-selector">';
@@ -423,7 +424,7 @@ function createJobsDropdown(jobs) {
   jobsHTML += '</select>';
 
   // Load html
-  iFrameDOM.find("#jobs").html(jobsHTML);
+  iFrameDOM.find('#jobs').html(jobsHTML);
 
   // Add event listener
   iFrameDOM.find('#job-selector').change(changeJob);
@@ -432,25 +433,25 @@ function createJobsDropdown(jobs) {
   if (jobs.length === 1) {
     loadJob(jobs[0].title, jobs[0].company);
   }
-}
+};
 
-function getName() {
-  let result = {};
+const getName = () => {
+  const result = {};
 
-  if (pageType === PAGETYPE_SALES_NAVIGATOR ) {
-    let nameElement = document.querySelector('.profile-topcard-person-entity__name');
+  if (pageType === PAGETYPE_SALES_NAVIGATOR) {
+    const nameElement = document.querySelector('.profile-topcard-person-entity__name');
     if (nameElement) {
       result.name = nameElement.innerHTML.trim();
-      let nameSplit = splitName(result.name);
+      const nameSplit = splitName(result.name);
       result.firstName = nameSplit.firstName;
       result.lastName = nameSplit.lastName;
     }
   }
   if (pageType === PAGETYPE_REGULAR_LINKEDIN) {
-    let nameElement = document.querySelector('.pv-top-card-section__name');
+    const nameElement = document.querySelector('.pv-top-card-section__name');
     if (nameElement) {
       result.name = nameElement.innerHTML.trim();
-      let nameSplit = splitName(result.name);
+      const nameSplit = splitName(result.name);
       result.firstName = nameSplit.firstName;
       result.lastName = nameSplit.lastName;
     }
@@ -471,9 +472,9 @@ function getName() {
   }
 
   return result;
-}
+};
 
-function getLinkedInFromUrl(url) {
+const getLinkedInFromUrl = (url) => {
   if (url) {
     // Take only the part before #
     let linkedInSplit = url.split('#');
@@ -483,18 +484,17 @@ function getLinkedInFromUrl(url) {
     // Take only the part before any slashes after the username
     linkedInSplit = linkedIn.split('/in/');
     if (linkedInSplit.length > 1) {
-      let username = linkedInSplit[1];
-      let usernameSplit = username.split('/');
+      const username = linkedInSplit[1];
+      const usernameSplit = username.split('/');
       linkedIn = linkedInSplit[0] + '/in/' + usernameSplit[0];
     }
     return linkedIn;
   }
-
-}
+};
 
 
 // Gets the LinkedIn address
-function getLinkedIn(url) {
+const getLinkedIn = (url) => {
   let linkedIn;
 
   if (pageType === PAGETYPE_SALES_NAVIGATOR ) {
@@ -504,7 +504,7 @@ function getLinkedIn(url) {
     document.querySelector('.copy-linkedin').click();
 
     // remove ugly popup that shows that we've copied that url
-    setTimeout(function(){
+    setTimeout(() => {
       document.querySelector('artdeco-toasts').style.display = 'none';
     }, 50);
 
@@ -529,7 +529,7 @@ function getLinkedIn(url) {
   }
 
   return linkedIn;
-}
+};
 
 const parseJsonIfPossible = (rawJson) => {
   try {
@@ -541,7 +541,7 @@ const parseJsonIfPossible = (rawJson) => {
 };
 
 // Gets the LinkedIn data in JSON format and loads it into global var data
-function initData() {
+const initData = () => {
   console.log('doing initData');
   const codes = document.querySelectorAll('code');
   console.log('codes: ' + codes.length);
@@ -550,7 +550,7 @@ function initData() {
     // decodeURIComponent sometimes gave errors
     // let code = parseJsonIfPossible(decodeURIComponent(codes[i].innerText.trim()));
     let code;
-    let codeText = codes[i].innerText.trim();
+    const codeText = codes[i].innerText.trim();
 
     try {
       code = JSON.parse(codeText);
@@ -566,13 +566,13 @@ function initData() {
       // break;
     }
   }
-}
+};
 
-function initRecruiterData() {
+const initRecruiterData = () => {
   // Captured as soon as page loads
   if (recruiterProfileData) {
     // Remove comments in first and last characters
-    if (recruiterProfileData.substr(0, 4) === '<!--' &&  recruiterProfileData.substr(-3) === '-->') {
+    if (recruiterProfileData.substr(0, 4) === '<!--' && recruiterProfileData.substr(-3) === '-->') {
       recruiterProfileData = recruiterProfileData.substring(4, recruiterProfileData.length - 3);
     }
     try {
@@ -584,9 +584,9 @@ function initRecruiterData() {
     data = data.profile;
     console.log(data);
   }
-}
+};
 
-function changeSelectEducation(educationId) {
+const changeSelectEducation = (educationId) => {
   console.log('changeSelectEducation for ' + educationId);
   if (iFrameDOM.find('#education' + educationId + '-select').is(':checked')) {
     iFrameDOM.find('#education' + educationId + '-degree').removeAttr('disabled');
@@ -597,10 +597,10 @@ function changeSelectEducation(educationId) {
     iFrameDOM.find('#education' + educationId + '-field-of-study').attr('disabled', 'disabled');
     iFrameDOM.find('#education' + educationId + '-institution').attr('disabled', 'disabled');
   }
-}
+};
 
-function getEducations() {
-  if(data.educations) {
+const getEducations = () => {
+  if (data.educations) {
     educationsMap = new Map();
     for (let e = 0; e < data.educations.length; e++) {
       const education = data.educations[e];
@@ -621,8 +621,8 @@ function getEducations() {
     }
   }
 
-  let html  = '';
-  educationsMap.forEach(function (education, key, map) {
+  let html = '';
+  educationsMap.forEach((education, key, map) => {
     html += '<div class="education">';
     html += ' <input type="hidden" class="education-id" value="' + education.educationId + '"/>';
     html += '  <div class="form-check">';
@@ -653,9 +653,9 @@ function getEducations() {
   });
 
   iFrameDOM.find('#educations').html(html);
-}
+};
 
-function changeSelectPosition(positionId) {
+const changeSelectPosition = (positionId) => {
   console.log('changeSelectPosition for ' + positionId);
   if (iFrameDOM.find('#position' + positionId + '-select').is(':checked')) {
     iFrameDOM.find('#position' + positionId + '-title').removeAttr('disabled');
@@ -664,12 +664,12 @@ function changeSelectPosition(positionId) {
     iFrameDOM.find('#position' + positionId + '-title').attr('disabled', 'disabled');
     iFrameDOM.find('#position' + positionId + '-company').attr('disabled', 'disabled');
   }
-}
+};
 
-function getPositions() {
+const getPositions = () => {
   if (data.positions) {
     positionsMap = new Map();
-    for (let p = 0; p < data.positions.length; p++) {
+    for (let p = 0; p < data.positions.length; p += 1) {
       const position = data.positions[p];
       const newPosition = { positionId: (pageType === PAGETYPE_RECRUITER ? position.positionId : position.posId),
                             current: position.current,
@@ -689,8 +689,8 @@ function getPositions() {
     }
   }
 
-  let html  = '';
-  positionsMap.forEach(function (position, key, map) {
+  let html = '';
+  positionsMap.forEach((position, key, map) => {
     html += '<div class="position">';
     html += ' <input type="hidden" class="position-id" value="' + position.positionId + '" />';
     html += '  <div class="form-check">';
@@ -711,9 +711,9 @@ function getPositions() {
   });
 
   iFrameDOM.find('#positions').html(html);
-}
+};
 
-function fillForm() {
+const fillForm = () => {
   console.log('fillForm');
   let name = '';
   let firstName = '';
@@ -743,7 +743,7 @@ function fillForm() {
   let twitters = [];
   educations = [];
 
-  let url = window.location.href;
+  const url = window.location.href;
   console.log('url:' + url);
   console.log('data: ' + JSON.stringify(data));
   console.log('pageType: ' + pageType);
@@ -811,7 +811,7 @@ function fillForm() {
 
     // Languages
     if (data.languages) {
-      for (let l = 0; l < data.languages.length; l++) {
+      for (let l = 0; l < data.languages.length; l += 1) {
         const language = data.languages[l];
         console.log('language.languageName:' + language.languageName);
         // LanguageName is a free text field in LinkedIn
@@ -834,6 +834,9 @@ function fillForm() {
           case 'Dutch':
           case 'Nederlands':
             dutch = language.proficiency;
+            break;
+
+          default:
             break;
         }
       }
@@ -887,13 +890,13 @@ function fillForm() {
     console.log('processing regular LinkedIn profile');
 
     // Name
-    let nameResult = getName();
+    const nameResult = getName();
     name = nameResult.name;
     firstName = nameResult.firstName;
     lastName = nameResult.lastName;
 
     // Location
-    let locationElement = document.querySelector('.pv-top-card-section__location');
+    const locationElement = document.querySelector('.pv-top-card-section__location');
     location = (locationElement ? locationElement.innerHTML.trim() : '');
     let locationSplit = splitLocation(location);
     city = locationSplit.city;
@@ -915,7 +918,7 @@ function fillForm() {
       const nameElement = $(nameElements[nameElements.length - 1]);
       name = nameElement.text().trim();
 
-      let nameSplit = splitName(name);
+      const nameSplit = splitName(name);
       firstName = nameSplit.firstName;
       lastName = nameSplit.lastName;
 
@@ -924,13 +927,12 @@ function fillForm() {
   }
 
 
-
   /* if (!nameElement) {
     nameInterval = setInterval(refillForm, 1000);
   } */
 
   // Set default values of fields
-  for (let f = 0; f < FIELDS.length; f++) {
+  for (let f = 0; f < FIELDS.length; f += 1) {
     if (FIELDS[f].defaultValue) {
       if (FIELDS[f].type === FIELDTYPE_CHECKBOX) {
         if (FIELDS[f].defaultValue === 'true') {
@@ -1004,18 +1006,17 @@ function fillForm() {
   if (iFrameDOM.find('#dutch')) {
     iFrameDOM.find('#dutch').val(dutch);
   }
+};
 
-}
-
-function createForm() {
+const createForm = () => {
   let html = '';
   html += '<form id="form">';
   let isTitleRequired = false;
-  isCompanyRequired  = false;
+  isCompanyRequired = false;
 
   if (FIELDS) {
     let nameShown = false;
-    for (let f = 0; f < FIELDS.length; f++) {
+    for (let f = 0; f < FIELDS.length; f += 1) {
       // We set isXXXrequired fields here while looping through the fields, but generate them later
       if (FIELDS[f].name === 'title' && FIELDS[f].required) {
         isTitleRequired = true;
@@ -1136,17 +1137,17 @@ function createForm() {
   html += '</form>';
 
   return html;
-}
+};
 
-function submitButtonLabel() {
+const submitButtonLabel = () => {
   return 'Save To ' + backendSystemName;
-}
+};
 
-function replateNullWithNA(text) {
+const replateNullWithNA = (text) => {
   return (text ? text : 'N/A');
-}
+};
 
-function createFrameTemplate() {
+const createFrameTemplate = () => {
   let html = '<!DOCTYPE html><html>';
   html += '<head>';
   html += '<link rel="stylesheet" href="' + bootstrapCSSURL + '" />';
@@ -1172,11 +1173,11 @@ function createFrameTemplate() {
   html += '</html>';
 
   return html;
-}
+};
 
-function createContactSidebar(contact, contacts, linkedIn, name, profilePictureURL) {
-  let isProfilePage = (pageType === PAGETYPE_SALES_NAVIGATOR || pageType === PAGETYPE_REGULAR_LINKEDIN || pageType === PAGETYPE_RECRUITER);
-  let objectSingular = (defaultMode === SAVEAS_MODE_LEAD ? 'lead' : 'contact');
+const createContactSidebar = (contact, contacts, linkedIn, name, profilePictureURL) => {
+  const isProfilePage = (pageType === PAGETYPE_SALES_NAVIGATOR || pageType === PAGETYPE_REGULAR_LINKEDIN || pageType === PAGETYPE_RECRUITER);
+  const objectSingular = (defaultMode === SAVEAS_MODE_LEAD ? 'lead' : 'contact');
 
   const createCreateContactButton = (linkedIn, objectSingular, isProfilePage) => {
     if (isProfilePage) {
@@ -1210,7 +1211,7 @@ function createContactSidebar(contact, contacts, linkedIn, name, profilePictureU
     if (contact.companyLink) {
       html += '      </a>';
     }
-    html += "</p>";
+    html += '</p>';
     if (isProfilePage) {
       html += '<button class="btn btn-primary" id="open-form-button">Open Form</button>';
     }
@@ -1259,9 +1260,9 @@ function createContactSidebar(contact, contacts, linkedIn, name, profilePictureU
   }
 
   return html;
-}
+};
 
-function createLoginForm() {
+const createLoginForm = () => {
   let html = '';
   html += '<h2>Login</h2>';
   html += ' <form id="login-form">';
@@ -1281,48 +1282,48 @@ function createLoginForm() {
   html += ' <a href="https://app.leadexporter.io/recover-password" target="_blank">I forgot my password</a>';
 
   return html;
-}
+};
 
-function minimize() {
+const minimize = () => {
   console.log('minimizing extension');
   $(iframe).css('width', IFRAME_WIDTH_MINIMIZED + 'px');
   $(iframe).css('display', 'none');
-}
+};
 
-function maximize() {
+const maximize = () => {
   console.log('maximizing extension');
   console.log($(iframe));
   $(iframe).css('width', IFRAME_WIDTH_MAXIMIZED + 'px');
   $(iframe).css('display', 'block');
-}
+};
 
-function hideMessages() {
+const hideMessages = () => {
   iFrameDOM.find('#submit-error-message').css('display', 'none');
-}
+};
 
-function showErrorMessage(message) {
+const showErrorMessage = (message) => {
   iFrameDOM.find('#submit-error-message').text(message);
   iFrameDOM.find('#submit-error-message').css('display', 'block');
-}
+};
 
-function getSaveAsMode() {
+const getSaveAsMode = () => {
   let saveAsMode = iFrameDOM.find('input[name=save-as]:checked').val();
   // if switch is not rendered
   if (!saveAsMode) {
     saveAsMode = defaultMode;
   }
   return saveAsMode;
-}
+};
 
-function getCompanyName() {
+const getCompanyName = () => {
   if (getSaveAsMode() === SAVEAS_MODE_LEAD) {
     return iFrameDOM.find('#company-name-lead').val();
   } else {
     return iFrameDOM.find('#company-name-contact').val();
   }
-}
+};
 
-function linkContact(contactId, linkedIn, type) {
+const linkContact = (contactId, linkedIn, type) => {
   console.log('linkedContact with contactId ' + contactId + ' and linkedIn:' + linkedIn);
 
   // Get all elements in the form and put them in an array
@@ -1347,9 +1348,9 @@ function linkContact(contactId, linkedIn, type) {
       iFrameDOM.find('#link-contact-error').text('Linking failed: ' + result.error);
     }
   });
-}
+};
 
-function getSelectedPositions() {
+const getSelectedPositions = () => {
   const positions = [];
 
   iFrameDOM.find('.position').each((index, position) => {
@@ -1365,9 +1366,9 @@ function getSelectedPositions() {
   });
 
   return positions;
-}
+};
 
-function getSelectionEducations() {
+const getSelectionEducations = () => {
   const educations = [];
 
   iFrameDOM.find('.education').each((index, education) => {
@@ -1383,9 +1384,9 @@ function getSelectionEducations() {
   });
 
   return educations;
-}
+};
 
-function submit() {
+const submit = () => {
   console.log('submit');
 
   const saveAs = getSaveAsMode();
@@ -1438,17 +1439,17 @@ function submit() {
       showErrorMessage('Record creation failed: ' + result.error);
     }
   });
-}
+};
 
-function setLoginVars(_userId, _apiKey) {
+const setLoginVars = (_userId, _apiKey) => {
   console.log('_userId:' + _userId + ' _apiKey:' + _apiKey);
   chrome.storage.sync.set({'userId': _userId}, function() {});
   chrome.storage.sync.set({'apiKey': _apiKey}, function() {});
   userId = _userId;
   apiKey = _apiKey;
-}
+};
 
-function login() {
+const login = () => {
   iFrameDOM.find('#login-error-message').css('display', 'none');
 
   const email = iFrameDOM.find('#email').val();
@@ -1471,17 +1472,17 @@ function login() {
       }
     }
   });
-}
+};
 
-function logout() {
+const logout = () => {
   console.log('logout');
   // Clear values from memory
   setLoginVars(null, null);
   // Load login form
   populateLoginForm();
-}
+};
 
-function searchCompany() {
+const searchCompany = () => {
 
   // Get search query
   const q = iFrameDOM.find('#search-company-query').val();
@@ -1512,9 +1513,9 @@ function searchCompany() {
             resultsHTML = '<div class="alert alert-warning mb-0">No results found. <a href="' + result.createNewLink +'" target="_blank">Create new Account</a>.</div>';
           }
 
-          iFrameDOM.find('#search-company-results').css('margin-top','10px');
+          iFrameDOM.find('#search-company-results').css('margin-top', '10px');
           iFrameDOM.find('#search-company-results').html(resultsHTML);
-          iFrameDOM.find('#search-company-result-items a').on('click', function (e) {
+          iFrameDOM.find('#search-company-result-items a').on('click', (e) => {
             e.preventDefault();
             // $(this).tab('show');
             const companyId = $(this).find('.company-id').val();
@@ -1530,8 +1531,7 @@ function searchCompany() {
     resultsHTML = '<div class="alert alert-warning mb-0">Please enter a search query</div>';
     iFrameDOM.find('#search-company-results').html(resultsHTML);
   }
-
-}
+};
 
 // map our commands to the classList methods
 const fnmap = {
@@ -1546,9 +1546,9 @@ const collapse = (selector, cmd) => {
   targets.forEach(target => {
     target.classList[fnmap[cmd]]('show');
   });
-}
+};
 
-function selectCompanyResult(companyId, companyName) {
+const selectCompanyResult = (companyId, companyName) => {
   console.log('selected companyId:' + companyId + ' companyName:' + companyName);
   iFrameDOM.find('#search-company-results').html('');
   iFrameDOM.find('#company-name-contact').val(companyName);
@@ -1556,14 +1556,14 @@ function selectCompanyResult(companyId, companyName) {
 
   // Close the popup
   collapse('#search-company-popup', 'hide');
-}
+};
 
-function openSearchCompanyPopup() {
+const openSearchCompanyPopup = () => {
   console.log('openSearchCompanyPopup');
   collapse('#search-company-popup', 'toggle');
-}
+};
 
-function createTask(message, i) {
+const createTask = (message, i) => {
   const authorLinkedIn = $('.msg-thread__topcard-btn').prop('href');
   console.log('conversation with ' + authorLinkedIn);
 
@@ -1580,17 +1580,17 @@ function createTask(message, i) {
     $('#task-message-' + whoId + '-' + i).html(createTaskSavedLink(result.success, result.error, result.link));
     loadTasks();
   });
-}
+};
 
-function createTaskSavedLink(saveSuccessful, error, link) {
+const createTaskSavedLink = (saveSuccessful, error, link) => {
   if (saveSuccessful) {
     return '<a href="' + link + '" target="_blank" style="color:green">Task saved</a>';
   } else {
     return '<div style="color:red">Save failed:' + error + '</div>';
   }
-}
+};
 
-function createTaskLink(messageGroup, i, taskExists, recordLink) {
+const createTaskLink = (messageGroup, i, taskExists, recordLink) => {
   // Create the link and the event binder
   let link;
   if (taskExists) {
@@ -1604,7 +1604,7 @@ function createTaskLink(messageGroup, i, taskExists, recordLink) {
     link.parentNode.removeChild(link);
   });
   $(messageGroup).find('.msg-s-message-group__meta').html($(messageGroup).find('.msg-s-message-group__meta').html() + link);
-  $('#create-task-' + whoId + '-' + i).on('click', function (e) {
+  $('#create-task-' + whoId + '-' + i).on('click', (e) => {
     e.preventDefault();
 
     // Get the counter of the element that's clicked
@@ -1612,13 +1612,13 @@ function createTaskLink(messageGroup, i, taskExists, recordLink) {
     console.log('counter is:' + counter);
     createTask(MESSAGES[counter - 1], counter);
   });
-}
+};
 
-function createMessageTaskLink(tasks, tasksWithoutSpaces, tempMessage, messageGroup, i, addToMessages) {
+const createMessageTaskLink = (tasks, tasksWithoutSpaces, tempMessage, messageGroup, i, addToMessages) => {
   console.log('createMessageTaskLink for ' + i + ' tempMessage:' + tempMessage);
   let taskExists = false;
   let taskLink = '';
-  let taskMatchCounter = tasksWithoutSpaces.indexOf(tempMessage.replace(/\s/g,''));
+  const taskMatchCounter = tasksWithoutSpaces.indexOf(tempMessage.replace(/\s/g,''));
   if (taskMatchCounter > -1) {
     console.log('MESSAGE EXISTS!' + tempMessage);
     taskExists = true;
@@ -1634,16 +1634,16 @@ function createMessageTaskLink(tasks, tasksWithoutSpaces, tempMessage, messageGr
       MESSAGES.push(tempMessage);
     }
   }
-}
+};
 
-function createMessageTaskLinks(tasks) {
+const createMessageTaskLinks = (tasks) => {
 
   if (numberOfMessageItems !== $('.msg-s-event-listitem').length) {
     // Remove existing links
-    var paras = document.getElementsByClassName('task-message');
+    const paras = document.getElementsByClassName('task-message');
     while (paras[0]) {
       paras[0].parentNode.removeChild(paras[0]);
-    };
+    }
 
     console.log('number of messages has changed');
     numberOfMessageItems = $('.msg-s-event-listitem').length;
@@ -1657,10 +1657,10 @@ function createMessageTaskLinks(tasks) {
     MESSAGES = [];
 
     if (tasks) {
-      for (let t = 0; t < tasks.length; t++) {
+      for (let t = 0; t < tasks.length; t += 1) {
         const task = tasks[t];
         if (task.description) {
-          tasksWithoutSpaces.push(task.description.replace(/\s/g,''));
+          tasksWithoutSpaces.push(task.description.replace(/\s/g, ''));
         }
       }
       console.log('tasksWithoutSpaces:' + JSON.stringify(tasksWithoutSpaces));
@@ -1685,7 +1685,7 @@ function createMessageTaskLinks(tasks) {
 
           // Start new message
           tempMessage = message;
-          i++;
+          i += 1;
         }
       }
 
@@ -1711,28 +1711,27 @@ function createMessageTaskLinks(tasks) {
       if (profileLink.text().trim()) {
         previousMessageGroup = messageGroup;
       }
-
     });
   } else {
     // console.log('number of conversations checked and the same');
   }
-}
+};
 
-function removeArea() {
+const removeArea = () => {
   let city = iFrameDOM.find('#city').val();
-  for (let a = 0; a < AREAS.length; a++) {
+  for (let a = 0; a < AREAS.length; a += 1) {
     city = city.replace(AREAS[a], '');
   }
 
   iFrameDOM.find('#city').val(city);
-}
+};
 
-function createRemoveAreaLink() {
+const createRemoveAreaLink = () => {
   const city = iFrameDOM.find('#city').val();
   if (city) {
     // See if any variation of 'area' is found in the city
     let matchingArea = '';
-    for (let a = 0; a < AREAS.length; a++) {
+    for (let a = 0; a < AREAS.length; a += 1) {
       if (city.indexOf(AREAS[a]) > -1) {
         matchingArea = AREAS[a];
         break;
@@ -1744,10 +1743,9 @@ function createRemoveAreaLink() {
       iFrameDOM.find('#remove-area').html('<a href="!#">Remove \'' + matchingArea.trim() + '\'</a>');
     }
   }
+};
 
-}
-
-function populateForm() {
+const populateForm = () => {
   console.log('populateForm');
   // NO NEED TO EXECUTE THIS BEFORE THE FORM IS LOADED?
   const postData = { userId, apiKey };
@@ -1774,13 +1772,13 @@ function populateForm() {
       switchSaveAsMode();
 
       // Add event listeners
-      iFrameDOM.find('input[name=save-as]').each(function(index, radio) {
-        radio.addEventListener("change", switchSaveAsMode);
+      iFrameDOM.find('input[name=save-as]').each((index, radio) => {
+        radio.addEventListener('change', switchSaveAsMode);
       });
-      iFrameDOM.find('.position-select').each(function(index, select) {
+      iFrameDOM.find('.position-select').each((index, select) => {
         $(select).change(changeSelectPosition($(select).attr('data-position-id')));
       });
-      iFrameDOM.find('.education-select').each(function(index, select) {
+      iFrameDOM.find('.education-select').each((index, select) => {
         $(select).change(changeSelectEducation($(select).attr('data-education-id')));
       });
 
@@ -1808,10 +1806,9 @@ function populateForm() {
       });
     }
   });
+};
 
-}
-
-function populateLoginForm() {
+const populateLoginForm = () => {
   // Create HTML
   const loginFormHTML = createLoginForm();
   iFrameDOM.find('#content').html(loginFormHTML);
@@ -1822,9 +1819,9 @@ function populateLoginForm() {
     event.preventDefault();
     login();
   });
-}
+};
 
-function createAuthorizeSidebar() {
+const createAuthorizeSidebar = () => {
   let html = '<br/>';
   html += '<h2>Authorize</h2>';
   html += '<br/>';
@@ -1833,15 +1830,15 @@ function createAuthorizeSidebar() {
   html += '<a class="btn btn-primary" href="' + SERVER_URL + '/authorize-user?userId=' + userId + '&apiKey=' + apiKey + '" target="_blank">Authorize</a>';
 
   return html;
-}
+};
 
-function populateAuthorizeSidebar() {
+const populateAuthorizeSidebar = () => {
   // Create HTML
   const authorizeSidebarHTML = createAuthorizeSidebar();
   iFrameDOM.find('#content').html(authorizeSidebarHTML);
-}
+};
 
-function getProfilePictureURL() {
+const getProfilePictureURL = () => {
   let pictureElement;
 
   if (pageType === PAGETYPE_SALES_NAVIGATOR) {
@@ -1872,9 +1869,9 @@ function getProfilePictureURL() {
       return pictureElement.prop('src');
     }
   }
-}
+};
 
-function getBackgroundImageURLFromElement(pictureElement) {
+const getBackgroundImageURLFromElement = (pictureElement) => {
   if (pictureElement) {
     let pictureURL = pictureElement.css('background-image');
     if (pictureURL) {
@@ -1882,9 +1879,9 @@ function getBackgroundImageURLFromElement(pictureElement) {
       return pictureURL;
     }
   }
-}
+};
 
-function createLoadingSidebar() {
+const createLoadingSidebar = () => {
   let html = '<br/><br/><br/>';
   html += '<div id="loading-content">';
   html += '  <img id="loading-picture" src="' + loadingImageURL + '" class="mx-auto d-block"/>';
@@ -1892,9 +1889,9 @@ function createLoadingSidebar() {
   html += '</div>';
 
   return html;
-}
+};
 
-function populateContactSidebar(contact, contacts, linkedIn, name, profilePictureURL) {
+const populateContactSidebar = (contact, contacts, linkedIn, name, profilePictureURL) => {
   // Populate content
   const contactSidebarHTML = createContactSidebar(contact, contacts, linkedIn, name, profilePictureURL);
   iFrameDOM.find('#content').html(contactSidebarHTML);
@@ -1923,15 +1920,15 @@ function populateContactSidebar(contact, contacts, linkedIn, name, profilePictur
 
     populateForm();
   });
-}
+};
 
-function populateLoadingSidebar() {
+const populateLoadingSidebar = () => {
   // Create HTML
   const loadingSidebarHTML = createLoadingSidebar();
   iFrameDOM.find('#content').html(loadingSidebarHTML);
-}
+};
 
-function getProfilePictureFromMessagingPage() {
+const getProfilePictureFromMessagingPage = () => {
   let profilePictureURL;
 
   const getProfilePictureFromMessageGroup = (messageGroup) => {
@@ -1950,7 +1947,7 @@ function getProfilePictureFromMessagingPage() {
 
 
   // Get image from active conversation
-  let activeConversationsSelector = $('.msg-conversation-listitem__link.active');
+  const activeConversationsSelector = $('.msg-conversation-listitem__link.active');
   if (activeConversationsSelector.length > 0) {
     $(activeConversationsSelector).each((index, messageGroup) => {
       profilePictureURL = getProfilePictureFromMessageGroup(messageGroup);
@@ -1971,13 +1968,13 @@ function getProfilePictureFromMessagingPage() {
   }
 
   return profilePictureURL;
-}
+};
 
-function populateTasksInContactSidebar(tasks) {
+const populateTasksInContactSidebar = (tasks) => {
   if (tasks) {
     let html = '';
     if (tasks.length > 0) {
-      for (let t = 0; t < tasks.length; t++) {
+      for (let t = 0; t < tasks.length; t += 1) {
         html += '<div class="card">';
         html += ' <div class="card-header">';
         html += '  <div class="pull-left"><a href="' + tasks[t].link + '" target="_blank">' + tasks[t].subject + '</a></div><div class="pull-right">' + tasks[t].date + '</div><div class="clearfix"></div></div>';
@@ -1991,9 +1988,9 @@ function populateTasksInContactSidebar(tasks) {
     }
     iFrameDOM.find('#tasks').html(html);
   }
-}
+};
 
-function loadTasks(cb) {
+const loadTasks = (cb) => {
   const postData = { whoId,
                      userId,
                      apiKey,
@@ -2013,9 +2010,9 @@ function loadTasks(cb) {
       }
     }
   });
-}
+};
 
-function doContactSearch(linkedIn, name, profilePictureURL, userId, apiKey ) {
+const doContactSearch = (linkedIn, name, profilePictureURL, userId, apiKey) => {
   console.log('doContactSearch for linkedIn:' + linkedIn + ' name:' + name);
   const postData = { linkedIn,
                       name,
@@ -2063,18 +2060,18 @@ function doContactSearch(linkedIn, name, profilePictureURL, userId, apiKey ) {
     }
   })
   // Handle connection failures
-  .fail(function(xhr, status) {
-    let error;
-    if (xhr.status === 0) {
-      error = 'Cannot connect.';
-    } else {
-      error = xhr.statusText;
-    }
-    iFrameDOM.find('#loading-content').html('<div class="alert alert-danger">Error connecting to LeadExporter.io: ' + error + '</div>');
-  })
-}
+    .fail((xhr, status) => {
+      let error;
+      if (xhr.status === 0) {
+        error = 'Cannot connect.';
+      } else {
+        error = xhr.statusText;
+      }
+      iFrameDOM.find('#loading-content').html('<div class="alert alert-danger">Error connecting to LeadExporter.io: ' + error + '</div>');
+    });
+};
 
-function loadFrameContent(urlHasChanged) {
+const loadFrameContent = (urlHasChanged) => {
   whoId = null;
   clearInterval(jobInterval);
   clearInterval(createMessageTaskLinksInterval);
@@ -2125,7 +2122,7 @@ function loadFrameContent(urlHasChanged) {
         doContactSearch(linkedIn, name, profilePictureURL, userId, apiKey);
 
         if (!profilePictureURL) {
-          let getProfilePictureFromMessagingPageInterval = setInterval(() => {
+          const getProfilePictureFromMessagingPageInterval = setInterval(() => {
             console.log('doing interval');
             profilePictureURL = getProfilePictureFromMessagingPage();
 
@@ -2161,7 +2158,7 @@ function loadFrameContent(urlHasChanged) {
         // If we don't get a result for name yet, try again, may still be loading
         name = getName().name;
         if (!name) {
-          let nameInterval = setInterval(() => {
+          const nameInterval = setInterval(() => {
             console.log('checking for name');
             name = getName().name;
             console.log('name: ' + name);
@@ -2182,12 +2179,12 @@ function loadFrameContent(urlHasChanged) {
   } else {
     populateLoginForm();
   }
-}
+};
 
-function checkURLchange(){
+const checkURLchange = () => {
   // console.log('check URL change');
   currentURL = window.location.href;
-  if(currentURL != oldURL) {
+  if (currentURL !== oldURL) {
     // Reset vars
     console.log('URL has changed!');
 
@@ -2196,24 +2193,24 @@ function checkURLchange(){
   }
 
   oldURL = window.location.href;
-}
+};
 
 
-$(document).ready(function(){
+$(document).ready(() => {
   // Capture recruiter profile data as soon as page loads as it is removed later on
   recruiterProfileData = $('code#profile-data').html();
 
   // logout();
   console.log('document ready, start loading');
-  chrome.storage.sync.get('userId', function(userIdObj) {
-    chrome.storage.sync.get('apiKey', function(apiKeyObj) {
+  chrome.storage.sync.get('userId', (userIdObj) => {
+    chrome.storage.sync.get('apiKey', (apiKeyObj) => {
       userId = userIdObj.userId;
       apiKey = apiKeyObj.apiKey;
 
       // Avoid recursive frame insertion...
-      var extensionOrigin = 'chrome-extension://' + chrome.runtime.id;
+      const extensionOrigin = `chrome-extension://${chrome.runtime.id}`;
       if (!location.ancestorOrigins.contains(extensionOrigin)) {
-        let frameId = 'leadexporter-frame';
+        const frameId = 'leadexporter-frame';
         // Create iFrame
         iframe = document.createElement('iframe');
         iframe.id = frameId;
@@ -2222,7 +2219,7 @@ $(document).ready(function(){
         document.body.appendChild(iframe);
 
         // Create script to overwrite copy function
-        let htmlScript = `const command = document.execCommand;
+        const htmlScript = `const command = document.execCommand;
 
                           var h = document.createElement("div");
                           h.style.cssText = 'display:none;';
@@ -2243,14 +2240,14 @@ $(document).ready(function(){
                             // Trigger default function
                             command(method);
                           };`;
-        let script = document.createElement('script');
+        const script = document.createElement('script');
         script.innerHTML = htmlScript;
         document.body.appendChild(script);
 
-        iFrameDOM = $("iframe#" + frameId).contents();
+        iFrameDOM = $(`iframe#${frameId}`).contents();
 
         // Create head, css and menu for the iframe
-        let html = createFrameTemplate();
+        const html = createFrameTemplate();
         iframe.contentDocument.body.innerHTML = '';
         iframe.contentDocument.write(html);
         iframe.contentDocument.close();
@@ -2268,7 +2265,7 @@ $(document).ready(function(){
         minimizedDiv.style.cssText = 'position:fixed;top:0;right:0;display:block;' +
                                'width: 40px; height:100%;z-index:100; border-left: 1px solid #fff; background-color: #004b7c;';
         document.body.appendChild(minimizedDiv);
-        let minimizedDivDOM = $('div#minimizedDiv').contents();
+        const minimizedDivDOM = $('div#minimizedDiv').contents();
         minimizedDivDOM.find('#maximize-button').click((e) => {
           e.preventDefault();
           maximize();
@@ -2280,11 +2277,10 @@ $(document).ready(function(){
         loadFrameContent();
 
         // Handle URL changes
-        setInterval(function() {
-            checkURLchange();
+        setInterval(() => {
+          checkURLchange();
         }, 1000);
       }
-
     });
   });
 });

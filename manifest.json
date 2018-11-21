@@ -8,7 +8,7 @@
   "icons": { "128": "icons/icon128.png" },
   "browser_action": {
     "default_popup": "popup.html",
-    "default_title": "Extract LinkedIn data straight into your CRM"
+    "default_title": "LeadExporter.io - Extract LinkedIn data straight into your CRM"
   },
   "permissions": [
     "storage",
@@ -39,5 +39,9 @@
       "img/loading.gif",
       "img/face.png"
   ],
+  "background": {
+      "scripts": ["background.js"],
+      "persistent": false
+  },
   "content_security_policy": "script-src 'self'; object-src 'self'"
 }
