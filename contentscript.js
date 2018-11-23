@@ -1443,8 +1443,8 @@ const submit = () => {
 
 const setLoginVars = (_userId, _apiKey) => {
   console.log('_userId:' + _userId + ' _apiKey:' + _apiKey);
-  chrome.storage.sync.set({'userId': _userId}, function() {});
-  chrome.storage.sync.set({'apiKey': _apiKey}, function() {});
+  chrome.storage.sync.set({ 'userId': _userId }, () => {});
+  chrome.storage.sync.set({ 'apiKey': _apiKey }, () => {});
   userId = _userId;
   apiKey = _apiKey;
 };
@@ -1461,15 +1461,13 @@ const login = () => {
       console.log('successful login');
       setLoginVars(result.userId, result.apiKey);
       loadFrameContent();
+    } else if (needToAuthenticate(result.errorNr)) {
+      setLoginVars(result.userId, result.apiKey);
+      populateAuthorizeSidebar();
     } else {
-      if (result.error === 'Please authorize') {
-        setLoginVars(result.userId, result.apiKey);
-        populateAuthorizeSidebar();
-      } else {
-        error = result.error;
-        iFrameDOM.find('#login-error-message').text(result.error);
-        iFrameDOM.find('#login-error-message').css('display', 'block');
-      }
+      error = result.error;
+      iFrameDOM.find('#login-error-message').text(result.error);
+      iFrameDOM.find('#login-error-message').css('display', 'block');
     }
   });
 };
@@ -1991,10 +1989,12 @@ const populateTasksInContactSidebar = (tasks) => {
 };
 
 const loadTasks = (cb) => {
-  const postData = { whoId,
-                     userId,
-                     apiKey,
-                     limit: 3 };
+  const postData = {
+    whoId,
+    userId,
+    apiKey,
+    limit: 3
+  };
   $.post(SERVER_URL + '/tasks', postData, (result) => {
     console.log('/tasks result:' + JSON.stringify(result));
     if (result.success) {
@@ -2010,6 +2010,10 @@ const loadTasks = (cb) => {
       }
     }
   });
+};
+
+const needToAuthenticate = (errorNr) => {
+  return (errorNr === 440 || errorNr === 441);
 };
 
 const doContactSearch = (linkedIn, name, profilePictureURL, userId, apiKey) => {
@@ -2034,7 +2038,7 @@ const doContactSearch = (linkedIn, name, profilePictureURL, userId, apiKey) => {
       backendSystemName = result.backendSystemName;
 
       if (contact) {
-        whoId = (contact ? contact.id : null );
+        whoId = (contact ? contact.id : null);
       }
 
       populateContactSidebar(contact, contacts, linkedIn, name, profilePictureURL);
@@ -2049,11 +2053,13 @@ const doContactSearch = (linkedIn, name, profilePictureURL, userId, apiKey) => {
           }
         });
       }
-
     } else {
       console.log('request failed: ' + result.errorNr + ' ' + result.error);
       if (result.errorNr === 403) {
         populateLoginForm();
+      } else if (needToAuthenticate(result.errorNr)) {
+        // authorisation is missing or expired
+        populateAuthorizeSidebar();
       } else {
         iFrameDOM.find('#loading-content').html('<div class="alert alert-danger">Error: ' + result.error + '</div>');
       }
@@ -2079,7 +2085,6 @@ const loadFrameContent = (urlHasChanged) => {
 
   console.log('userId:' + userId + ' apiKey:' + apiKey);
   if (userId && apiKey) {
-
     // Determine page type
     //       "matches": ["*://*.linkedin.com/in/*", "*://*.linkedin.com/sales/people/*", "*://*.linkedin.com/messaging/*"],
     pageType = '';
@@ -2087,7 +2092,7 @@ const loadFrameContent = (urlHasChanged) => {
     if (currentURL.indexOf('/sales/people') > -1) {
       // LinkedIn Sales Navigator page
       pageType = PAGETYPE_SALES_NAVIGATOR;
-    } else if (currentURL.indexOf('linkedin.com/in/') > -1 && currentURL.indexOf('/detail/recent-activity/') === -1){
+    } else if (currentURL.indexOf('linkedin.com/in/') > -1 && currentURL.indexOf('/detail/recent-activity/') === -1) {
       // Regular LinkedIn page
       pageType = PAGETYPE_REGULAR_LINKEDIN;
     } else if (currentURL.indexOf('linkedin.com/recruiter/profile') > -1) {
