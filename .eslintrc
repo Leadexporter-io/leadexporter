@@ -13,7 +13,7 @@
     "no-restricted-syntax": ["error", "FunctionExpression", "WithStatement", "BinaryExpression[operator='in']"],
     "o-absolute-path": 0,
     "no-new": 0,
-    "no-undef": 0,
+    "no-undef": 2,
     "no-console": 0,
     "no-bitwise": 0,
     "no-useless-escape": 0,

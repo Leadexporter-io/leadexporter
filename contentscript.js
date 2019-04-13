@@ -8,8 +8,8 @@ const EDITION_BUSINESS_DEVELOPER = 'Business Developer';
 const EDITION_RECRUITER = 'Recruiter';
 const IFRAME_WIDTH_MINIMIZED = 50;
 const IFRAME_WIDTH_MAXIMIZED = 470;
-// const SERVER_URL = 'https://app.leadexporter.io/api';
-const SERVER_URL = 'http://localhost:10/api';
+const SERVER_URL = 'https://app.leadexporter.io/api';
+// const SERVER_URL = 'http://localhost:10/api';
 const SAVEAS_MODE_LEAD = 'Lead';
 const SAVEAS_MODE_CONTACT = 'Contact';
 const SEARCH_COMPANY_SUBMIT_BUTTON_LABEL = '<i class="fa fa-search"></i>';
@@ -221,6 +221,7 @@ const analyzeRegularLinkedInPageJobs = (allJobs) => {
       if (isPositionCurrent(jobDetailText)) {
 
         const jobDetailTextSplit = jobDetailText.split('\n');
+        console.log('jobDetailTextSplit:' + jobDetailTextSplit);
         const job = {
           title: (jobDetailTextSplit.length > 1 ? jobDetailTextSplit[1].trim() : ''),
           company: (jobDetailTextSplit.length > 5 ? jobDetailTextSplit[5].trim() : ''),
@@ -230,7 +231,7 @@ const analyzeRegularLinkedInPageJobs = (allJobs) => {
     });
 
     // Version 2
-    jobDetails = $(job).find('.pv-profile-section__card-item-v2');
+    /*jobDetails = $(job).find('.pv-profile-section__card-item-v2');
     $.each(jobDetails, (index, jobDetail) => {
 
       let company = $(jobDetail).find('.pv-entity__company-summary-info').find('h3').text().trim();
@@ -238,7 +239,11 @@ const analyzeRegularLinkedInPageJobs = (allJobs) => {
       const positionsAtCompany = $(jobDetail).find('.pv-entity__position-group-role-item');
       $.each(positionsAtCompany, (index, positionAtCompany) => {
         let title = $(positionAtCompany).find('h3').text();
-        title = title.substring(15, title.length).trim(); // Skip hidden text 'Title' and some whitespace
+        const titleSplit = title.split('\n');
+        if (titleSplit.length > 1) {
+          title = titleSplit[2];
+        }
+        title = title.trim();
         let dates = $(positionAtCompany).find('.pv-entity__date-range').text();
         dates = dates.substring(25, dates.length).trim(); // Skip hidden text 'Dates Employed' and some whitespace
         if (isPositionCurrent(dates)) {
@@ -249,7 +254,7 @@ const analyzeRegularLinkedInPageJobs = (allJobs) => {
           jobs.push(job);
         }
       });
-    });
+    }); */
 
     // Group version (multiple positions for same company)
     let company = $(job).find('.pv-entity__company-summary-info').find('h3').text().trim();
@@ -257,7 +262,11 @@ const analyzeRegularLinkedInPageJobs = (allJobs) => {
     const positionsAtCompany = $(job).find('.pv-entity__position-group-role-item');
     $.each(positionsAtCompany, (index, positionAtCompany) => {
       let title = $(positionAtCompany).find('h3').text();
-      title = title.substring(15, title.length).trim(); // Skip hidden text 'Title' and some whitespace
+      const titleSplit = title.split('\n');
+      if (titleSplit.length > 1) {
+        title = titleSplit[2];
+      }
+      title = title.trim();
       let dates = $(positionAtCompany).find('.pv-entity__date-range').text();
       dates = dates.substring(25, dates.length).trim(); // Skip hidden text 'Dates Employed' and some whitespace
       if (isPositionCurrent(dates)) {
@@ -1503,7 +1512,7 @@ const searchCompany = () => {
           if (result.results.length > 0) {
             resultsHTML = '<ul class="list-group mt-10" id="search-company-result-items" role="tablist">';
             for (let r = 0; r < result.results.length; r++) {
-              let company = result.results[r];
+              const company = result.results[r];
               resultsHTML += '<a class="list-group-item list-group-item-action" href="#!" role="tab" data-toggle="list">' + company.name + '<input type="hidden" class="company-id" value="' + company.id + '" /></a>';
             }
             resultsHTML += '</ul>';
@@ -1516,8 +1525,11 @@ const searchCompany = () => {
           iFrameDOM.find('#search-company-result-items a').on('click', (e) => {
             e.preventDefault();
             // $(this).tab('show');
-            const companyId = $(this).find('.company-id').val();
-            const companyName = $(this).text();
+            console.log('clicked on search result');
+            console.log(e);
+            const companyId = $(e.target).find('.company-id').val();
+            const companyName = $(e.target).text();
+            console.log('companyId:' + companyId + ' companyName:' + companyName);
             selectCompanyResult(companyId, companyName);
           });
         }
@@ -1562,8 +1574,9 @@ const openSearchCompanyPopup = () => {
 };
 
 const createTask = (message, i) => {
-  const authorLinkedIn = $('.msg-thread__topcard-btn').prop('href');
+  const authorLinkedIn = getInboxMessageLinkedIn();
   console.log('conversation with ' + authorLinkedIn);
+  console.log('message:' + message + ' i:' + i);
 
   const postData = { authorLinkedIn,
                      message,
@@ -1589,12 +1602,13 @@ const createTaskSavedLink = (saveSuccessful, error, link) => {
 };
 
 const createTaskLink = (messageGroup, i, taskExists, recordLink) => {
+  console.log('createTaskLink with messageGroup:' + messageGroup + ' i:' + i + 'taskExists:' + taskExists + ' recordLink:' + recordLink);
   // Create the link and the event binder
   let link;
   if (taskExists) {
-    link = '<div id="task-message-' + whoId + '-' + i + '" class="task-message" style="margin-left: 10px;">' + createTaskSavedLink(recordLink) + '</div>';
+    link = '<span id="task-message-' + whoId + '-' + i + '" class="task-message" style="margin-left: 10px;">' + createTaskSavedLink(recordLink) + '</span>';
   } else {
-    link = '<div id="task-message-' + whoId + '-' + i + '" class="task-message" style="margin-left: 10px;"><a id=\"create-task-' + whoId + '-' + i + '\" data-counter="' + i + '" href=\"!#\">Create task</a></div>';
+    link = '<span id="task-message-' + whoId + '-' + i + '" class="task-message" style="margin-left: 10px;"><a id=\"create-task-' + whoId + '-' + i + '\" data-counter="' + i + '" href=\"!#\">Create task</a></span>';
   }
 
   // Remove any other existing links
@@ -1606,7 +1620,9 @@ const createTaskLink = (messageGroup, i, taskExists, recordLink) => {
     e.preventDefault();
 
     // Get the counter of the element that's clicked
-    const counter = $(this).attr('data-counter');
+    console.log('clicked on:');
+    console.log(e);
+    const counter = $(e.target).attr('data-counter');
     console.log('counter is:' + counter);
     createTask(MESSAGES[counter - 1], counter);
   });
@@ -2022,7 +2038,7 @@ const doContactSearch = (linkedIn, name, profilePictureURL, userId, apiKey) => {
                       name,
                       userId,
                       apiKey };
-
+  console.log('data for sending: ' + JSON.stringify(postData));
   $.post(SERVER_URL + '/contact/search', postData, (result) => {
     console.log('result: ' + JSON.stringify(result));
     if (result.success) {
@@ -2054,6 +2070,7 @@ const doContactSearch = (linkedIn, name, profilePictureURL, userId, apiKey) => {
         });
       }
     } else {
+      console.log('request failed: ' + JSON.stringify(result));
       console.log('request failed: ' + result.errorNr + ' ' + result.error);
       if (result.errorNr === 403) {
         populateLoginForm();
@@ -2076,6 +2093,14 @@ const doContactSearch = (linkedIn, name, profilePictureURL, userId, apiKey) => {
       iFrameDOM.find('#loading-content').html('<div class="alert alert-danger">Error connecting to LeadExporter.io: ' + error + '</div>');
     });
 };
+
+const getInboxMessageLinkedIn = () => {
+  let linkedIn = $('.msg-thread__topcard-btn').prop('href');
+  if (!linkedIn) {
+    linkedIn = $('.msg-thread__link-to-profile').prop('href');
+  }
+  return linkedIn;
+}
 
 const loadFrameContent = (urlHasChanged) => {
   whoId = null;
@@ -2118,7 +2143,7 @@ const loadFrameContent = (urlHasChanged) => {
       let profilePictureURL;
 
       if (pageType === PAGETYPE_LINKEDIN_MESSAGING) {
-        linkedIn = $('.msg-thread__topcard-btn').prop('href');
+        linkedIn = getInboxMessageLinkedIn();
         name = $('.msg-entity-lockup__entity-title').text().trim();
 
         // Because of async loading: keep trying until we found the picture
