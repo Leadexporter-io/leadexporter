@@ -218,14 +218,18 @@ function analyzeRegularLinkedInPageJobs(allJobs){
     // Version 1
     let jobDetails = $(job).find(".pv-entity__summary-info");
     $.each(jobDetails, function (index, jobDetail) {
+      console.log('v1');
       let jobDetailText = $(jobDetail).text();
+      console.log('jobDetailText:' + jobDetailText);
       if (isPositionCurrent(jobDetailText)) {
 
         let jobDetailTextSplit = jobDetailText.split("\n");
+        console.log('jobDetailTextSplit:' + jobDetailTextSplit);
         let job = {
           title: (jobDetailTextSplit.length > 1 ? jobDetailTextSplit[1].trim() : ''),
-          company: (jobDetailTextSplit.length > 5 ? jobDetailTextSplit[5].trim() : ''),
+          company: (jobDetailTextSplit.length > 4 ? jobDetailTextSplit[4].trim() : ''),
         };
+        console.log('job v1:' + JSON.stringify(job));
         jobs.push(job);
       }
     });
@@ -233,20 +237,24 @@ function analyzeRegularLinkedInPageJobs(allJobs){
     // Version 2
     jobDetails = $(job).find(".pv-profile-section__card-item-v2");
     $.each(jobDetails, function (index, jobDetail) {
+      console.log('v2');
 
-      let company = $(jobDetail).find('.pv-entity__company-summary-info').find('h3').text().trim();
-      company = company.substring(14, company.length).trim(); // Skip hidden text 'Company Name'
+      let company = $(jobDetail).find('.pv-entity__secondary-title').text().trim();
+      // company = company.substring(14, company.length).trim(); // Skip hidden text 'Company Name'
+      console.log('company:' + company);
       let positionsAtCompany = $(jobDetail).find('.pv-entity__position-group-role-item');
       $.each(positionsAtCompany, function (index, positionAtCompany) {
         let title = $(positionAtCompany).find('h3').text();
         title = title.substring(15, title.length).trim(); // Skip hidden text 'Title' and some whitespace
         let dates = $(positionAtCompany).find('.pv-entity__date-range').text();
         dates = dates.substring(25, dates.length).trim(); // Skip hidden text 'Dates Employed' and some whitespace
+        console.log('title: ' + title + ' dates:' + dates);
         if (isPositionCurrent(dates)) {
           let job = {
             title,
             company,
           };
+          console.log('job v2:' + JSON.stringify(job));
           jobs.push(job);
         }
       });
@@ -255,6 +263,7 @@ function analyzeRegularLinkedInPageJobs(allJobs){
     // Group version (multiple positions for same company)
     let company = $(job).find('.pv-entity__company-summary-info').find('h3').text().trim();
     company = company.substring(14, company.length).trim(); // Skip hidden text 'Company Name'
+    console.log('company v3:' + company);
     let positionsAtCompany = $(job).find('.pv-entity__position-group-role-item');
     $.each(positionsAtCompany, function (index, positionAtCompany) {
       let title = $(positionAtCompany).find('h3').text();
@@ -447,7 +456,9 @@ function getName() {
     }
   }
   if (pageType === PAGETYPE_REGULAR_LINKEDIN) {
-    let nameElement = document.querySelector('.pv-top-card-section__name');
+    let listElement = document.querySelector('.pv-top-card--list.inline-flex.align-items-center');
+    console.log(listElement);
+    let nameElement = $(listElement).find('li')[0];
     if (nameElement) {
       result.name = nameElement.innerHTML.trim();
       let nameSplit = splitName(result.name);
@@ -492,25 +503,43 @@ function getLinkedInFromUrl(url) {
 
 }
 
+function checkCopiedLinkedInUrl() {
+  // Get the linkedIn address which has been written to this hidden element
+  const linkedIn = document.querySelector('#linkedin-paste').innerText;
+  console.log('linkedIn is ' + linkedIn);
+  return linkedIn;
+}
+
+// helper wait function
+async function wait(ms) {
+  return new Promise(resolve => {
+    setTimeout(resolve, ms);
+  });
+}
 
 // Gets the LinkedIn address
-function getLinkedIn(url) {
+async function getLinkedIn(url) {
   let linkedIn;
 
   if (pageType === PAGETYPE_SALES_NAVIGATOR ) {
-    console.log('get linkedIn for Sales Navigator');
 
     // now we trigger the LinkedIn default onclick
-    document.querySelector('.copy-linkedin').click();
+    document.querySelector('[data-control-name="copy_linkedin"]').click();
 
     // remove ugly popup that shows that we've copied that url
-    setTimeout(function(){
+    await setTimeout(function(){
       document.querySelector('artdeco-toasts').style.display = 'none';
     }, 50);
 
-    // Get the linkedIn address which has been written to this hidden element
-    linkedIn = document.querySelector('#linkedin-paste').innerText;
-    console.log('linkedIn is ' + linkedIn);
+    // wait for everything to load before we capture the linkedIn url
+    await wait(200);
+    linkedIn = checkCopiedLinkedInUrl();
+
+    // try again if we didn't get the linkedIn url last time
+    if (!linkedIn) {
+      await wait(200);
+      linkedIn = checkCopiedLinkedInUrl();
+    }
 
     return linkedIn;
   }
@@ -713,7 +742,7 @@ function getPositions() {
   iFrameDOM.find('#positions').html(html);
 }
 
-function fillForm() {
+async function fillForm() {
   console.log('fillForm');
   let name = '';
   let firstName = '';
@@ -807,7 +836,7 @@ function fillForm() {
     }
 
     // LinkedIn
-    linkedIn = getLinkedIn();
+    linkedIn = await getLinkedIn();
 
     // Languages
     if (data.languages) {
@@ -863,22 +892,34 @@ function fillForm() {
       $(contactInfoElement).find('.mv2').each(function(index, infoLine) {
         let infoLineHTML = $(infoLine).html();
         if (infoLineHTML.indexOf('type="mobile-icon"') > -1 || infoLineHTML.indexOf('type="phone-handset-icon"') > -1) {
-          phone = $(infoLine).find('a').text().trim();
+          const phoneLines = $(infoLine).find('a').html().split('</span>');
+          if (phoneLines.length > 1) {
+            phone = phoneLines[1].trim();
+          }
         }
         if (infoLineHTML.indexOf('type="envelope-icon"') > -1) {
-          email = $(infoLine).find('a').text().trim();
+          const emailLines = $(infoLine).find('a').html().split('</span>');
+          if (emailLines.length > 1) {
+            email = emailLines[1].trim();
+          }
         }
         if (infoLineHTML.indexOf('type="link-icon"') > -1) {
-          website = $(infoLine).find('a').text().trim();
+          const websiteLines = $(infoLine).find('a').html().split('</span>');
+          if (websiteLines.length > 1) {
+            website = websiteLines[1].trim();
+          }
         }
         if (infoLineHTML.indexOf('type="twitter-icon"') > -1) {
-          twitter = $(infoLine).find('a').text().trim();
+          const twitterLines = $(infoLine).find('a').html().split('</span>');
+          if (twitterLines.length > 1) {
+            twitter = twitterLines[1].trim();
+          }
         }
       });
     }
 
     // LinkedIn
-    linkedIn = getLinkedIn();
+    linkedIn = await getLinkedIn();
 
     // Jobs
     jobInterval = setInterval(getJobs, 1000);
@@ -1845,8 +1886,15 @@ function getProfilePictureURL() {
   let pictureElement;
 
   if (pageType === PAGETYPE_SALES_NAVIGATOR) {
-    pictureElement = $('.entity-image.entity-size-6.person');
-    return pictureElement.prop('src');
+    let pictureParentElement = $('.presence-entity--size-6');
+    console.log(pictureParentElement);
+    if (pictureParentElement.length > 0) {
+      pictureElement = $(pictureParentElement[0]).find('img');
+      console.log(pictureElement);
+      if (pictureElement.length > 0) {
+        return $(pictureElement[0]).prop('src');
+      }
+    }
   }
 
   if (pageType === PAGETYPE_RECRUITER) {
@@ -1863,9 +1911,12 @@ function getProfilePictureURL() {
   }
 
   if (pageType === PAGETYPE_REGULAR_LINKEDIN) {
-    pictureElement = $('.pv-top-card-section__photo');
-    if (pictureElement.length > 0) {
-      return getBackgroundImageURLFromElement(pictureElement);
+    let parentElement = $('.presence-entity.pv-top-card__image');
+    if (parentElement.length > 0) {
+      pictureElement = parentElement[0].querySelector('img');
+      if (pictureElement) {
+        return $(pictureElement).prop('src');
+      }
     } else {
       // User visits his own profile
       pictureElement = $('.profile-photo-edit__preview');
@@ -2074,7 +2125,7 @@ function doContactSearch(linkedIn, name, profilePictureURL, userId, apiKey ) {
   })
 }
 
-function loadFrameContent(urlHasChanged) {
+async function loadFrameContent(urlHasChanged) {
   whoId = null;
   clearInterval(jobInterval);
   clearInterval(createMessageTaskLinksInterval);
@@ -2148,13 +2199,14 @@ function loadFrameContent(urlHasChanged) {
         initRecruiterData();
         name = getName().name;
         profilePictureURL = getProfilePictureURL();
-        linkedIn = getLinkedIn();
+        linkedIn = await getLinkedIn();
 
         doContactSearch(linkedIn, name, profilePictureURL, userId, apiKey);
       } else if (pageType === PAGETYPE_SALES_NAVIGATOR || pageType === PAGETYPE_REGULAR_LINKEDIN) {
-        const finishGettingData = (name) => {
+        const finishGettingData = async (name) => {
           profilePictureURL = getProfilePictureURL();
-          linkedIn = getLinkedIn(currentURL);
+          linkedIn = await getLinkedIn(currentURL);
+          console.log('linkedIn down:' + linkedIn);
           doContactSearch(linkedIn, name, profilePictureURL, userId, apiKey);
         };
 
@@ -2218,7 +2270,7 @@ $(document).ready(function(){
         iframe = document.createElement('iframe');
         iframe.id = frameId;
         iframe.style.cssText = 'position:fixed;top:0;right:0;display:block;' +
-                               'width:' + IFRAME_WIDTH_MAXIMIZED + 'px;height:100%;z-index:1000; border-left: 1px solid #ccc; background-color: white;';
+                               'width:' + IFRAME_WIDTH_MAXIMIZED + 'px;height:100%;z-index:2000; border-left: 1px solid #ccc; background-color: white;';
         document.body.appendChild(iframe);
 
         // Create script to overwrite copy function
