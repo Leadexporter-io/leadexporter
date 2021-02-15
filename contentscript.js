@@ -127,6 +127,8 @@ function isUSState(state) {
 }
 
 function splitName(name) {
+  console.log('name:',name)
+  name = name.replace(/[^\w\s]/gi, '').trim()
   let nameSplit = name.split(" ");
   let firstName = nameSplit[0];
   let lastName = name.substring(firstName.length + 1, name.length);
