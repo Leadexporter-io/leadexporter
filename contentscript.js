@@ -8,8 +8,8 @@ const EDITION_BUSINESS_DEVELOPER = 'Business Developer';
 const EDITION_RECRUITER = 'Recruiter';
 const IFRAME_WIDTH_MINIMIZED = 50;
 const IFRAME_WIDTH_MAXIMIZED = 470;
-const SERVER_URL = 'https://app.leadexporter.io/api';
-// const SERVER_URL = 'http://localhost:10/api';
+// const SERVER_URL = 'https://app.leadexporter.io/api';
+const SERVER_URL = 'http://localhost:8085/api';
 const SAVEAS_MODE_LEAD = 'Lead';
 const SAVEAS_MODE_CONTACT = 'Contact';
 const SEARCH_COMPANY_SUBMIT_BUTTON_LABEL = '<i class="fa fa-search"></i>';
@@ -418,7 +418,7 @@ function getJobs() {
 function createJobsDropdown(jobs) {
   console.log('createJobsDropdown for ' + JSON.stringify(jobs));
   // Create dropdown code
-  let jobsHTML = '<select id="job-selector">';
+  let jobsHTML = '<select id="job-selector" class="form-control">';
   if (jobs.length === 0) {
     jobsHTML += '<option value="">No current positions</option>';
   } else {
@@ -1049,6 +1049,23 @@ async function fillForm() {
 }
 
 function createForm() {
+  //
+  console.log('Foorm:',iFrameDOM)
+  
+  // click to more info
+  document.querySelector('a[data-control-name="contact_see_more"]').click();
+  window.scrollTo(0,document.body.scrollHeight);
+  window.scrollTo(0,0);
+  
+  // hide the modal?
+  document.querySelector('#artdeco-modal-outlet').style.display = 'none';
+  document.querySelector('body').style.overflow = 'auto';
+
+  document.querySelector('a[data-control-name="contact_see_more"]').addEventListener('click', ()=> {
+    document.querySelector('#artdeco-modal-outlet').style.display ='block';
+  })
+
+
   let html = '';
   html += '<form id="form">';
   let isTitleRequired = false;
@@ -1788,6 +1805,38 @@ function createRemoveAreaLink() {
 
 }
 
+/**
+ * @description Fill the info from LinkedIn DOM
+ */
+function fillTheContactInfo () {
+  const contactInfo  = document.querySelector('.pv-contact-info');
+  // Loop through list
+  iFrameDOM.find('#linkedIn').val(document.querySelectorAll('.pv-contact-info__header')[0].nextSibling.nextSibling.innerText.trim())
+  document.querySelectorAll('.pv-contact-info__header').forEach(e => {
+ 
+
+    if (e.innerText.includes('Address') && iFrameDOM.find('#email').length !== 0) {
+      iFrameDOM.find('#email').val(e.nextSibling.nextSibling.innerText.trim())   
+    }
+    if (e.innerText.includes('Email') && iFrameDOM.find('#email').length !== 0) {
+      iFrameDOM.find('#email').val(e.nextSibling.nextSibling.innerText.trim())   
+    }
+
+    if (e.innerText.includes('Website') && iFrameDOM.find('#website').length !== 0) {
+      iFrameDOM.find('#website').val(e.nextSibling.nextSibling.innerText.trim().split(' ')[0])     
+    }
+
+    if (e.innerText.includes('Phone') && iFrameDOM.find('#phone').length !== 0) {
+      iFrameDOM.find('#phone').val(e.nextSibling.nextSibling.innerText.trim().replace(/\D/g,''))     
+    }
+   
+  })
+
+
+
+  // document.querySelectorAll('.pv-contact-info__header')
+}
+
 function populateForm() {
   console.log('populateForm');
   // NO NEED TO EXECUTE THIS BEFORE THE FORM IS LOADED?
@@ -1800,8 +1849,10 @@ function populateForm() {
       const formHTML = createForm();
       iFrameDOM.find('#content').html(formHTML);
 
+
       // Load the data in the iFrame
       fillForm();
+      fillTheContactInfo();
 
       // Load the right mode
       if (defaultMode === SAVEAS_MODE_LEAD) {
@@ -2270,7 +2321,7 @@ $(document).ready(function(){
         iframe = document.createElement('iframe');
         iframe.id = frameId;
         iframe.style.cssText = 'position:fixed;top:0;right:0;display:block;' +
-                               'width:' + IFRAME_WIDTH_MAXIMIZED + 'px;height:100%;z-index:2000; border-left: 1px solid #ccc; background-color: white;';
+                               'width:' + IFRAME_WIDTH_MAXIMIZED + 'px;height:100%;z-index:10001; border-left: 1px solid #ccc; background-color: white;';
         document.body.appendChild(iframe);
 
         // Create script to overwrite copy function
